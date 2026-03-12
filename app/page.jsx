@@ -6,6 +6,8 @@ const links = [
   { href: "/topfour", label: "Topfour" },
   // { href: "/wwc", label: "WWC" },
   { href: "/wwctwo", label: "WWC Two" },
+  { href: "/wwcstats", label: "WWC Stats" },
+  { href: "/matchsummary", label: "Match Sumary" },
 ];
 
 export default function Home() {

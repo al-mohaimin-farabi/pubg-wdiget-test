@@ -4,6 +4,7 @@ import { useGetWwcdTeamStatsQuery } from "@/lib/services/api";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import Layout from "@/components/layout";
 
 const wwc = () => {
   const { data, error, isLoading } = useGetWwcdTeamStatsQuery();
@@ -20,7 +21,7 @@ const wwc = () => {
   }, [data, error, isLoading]);
 
   return (
-    <div className="w-scrren relative h-screen overflow-hidden">
+    <Layout>
       <div className="absolute bottom-16 z-10 h-auto w-full px-16">
         <div className="relative z-10 mx-auto mb-8 flex max-h-[180px] w-max">
           <div className="grid aspect-square place-content-center bg-black px-4">
@@ -31,7 +32,7 @@ const wwc = () => {
               height={100}
             />
           </div>
-          <div className="bg-primary grid place-content-center px-24">
+          <div className="bg-primary-shade-two grid place-content-center px-24">
             <p className="text-5xl font-extrabold">Team Name</p>
           </div>
         </div>
@@ -63,7 +64,7 @@ const wwc = () => {
           ))}
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
