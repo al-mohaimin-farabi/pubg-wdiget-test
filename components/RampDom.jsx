@@ -39,20 +39,18 @@ const data2 = {
   team_image: "/KS_AXE_2020.png",
 };
 
-type DataType = typeof data1;
-
 // Card Component
-const RampDomCard = ({ data }: { data: DataType }) => {
+const RampDomCard = ({ data }) => {
   const elmisIcon =
     data?.type?.toLowerCase() === "domination" ? "/scope.png" : "/helmet.png";
 
   console.log(data?.type?.toLowerCase());
 
   return (
-    <div className="relative bg-gray-200 w-[300px] h-[70px]">
+    <div className="relative h-[70px] w-[300px] bg-gray-200">
       {/* title */}
-      <div className="relative z-1 w-full h-[40px] bg-linear-to-t from-[#6F6EBB] to-[#414098]">
-        <p className="font-bold text-2xl p-2 text-[#F9F871]">
+      <div className="relative z-1 h-[40px] w-full bg-linear-to-t from-[#6F6EBB] to-[#414098]">
+        <p className="p-2 text-2xl font-bold text-[#F9F871]">
           {data?.type?.toLowerCase() === "domination"
             ? "DOMINATION"
             : "RAMPAGE"}
@@ -60,11 +58,11 @@ const RampDomCard = ({ data }: { data: DataType }) => {
       </div>
 
       {/* player ign and team logo */}
-      <div className="relative bg-[#D4DFEA] w-full h-[30px] flex p-2 items-center justify-start gap-2">
+      <div className="relative flex h-[30px] w-full items-center justify-start gap-2 bg-[#D4DFEA] p-2">
         <Image src={data.team_image} alt="Team Logo" width={20} height={20} />
         <p className="text-[#2F3475]">{data.player_ign}</p>
         <Image
-          className="absolute right-10 bottom-0 z-10 w-[120px] h-[100px]"
+          className="absolute right-10 bottom-0 z-10 h-[100px] w-[120px]"
           src={data.player_thumbnail}
           alt="Player Thumbnail"
           width={80}
@@ -73,12 +71,12 @@ const RampDomCard = ({ data }: { data: DataType }) => {
       </div>
 
       {/* elmis box */}
-      <div className="bg-linear-to-b z-1 flex flex-col justify-between from-[#6F6EBB] to-[#414098] aspect-square p-3 border-4 border-[#DCE3FF] absolute -top-12 -right-8">
-        <div className="flex gap-2 items-center">
+      <div className="absolute -top-12 -right-8 z-1 flex aspect-square flex-col justify-between border-4 border-[#DCE3FF] bg-linear-to-b from-[#6F6EBB] to-[#414098] p-3">
+        <div className="flex items-center gap-2">
           <Image src={elmisIcon} alt="Elmis Icon" width={40} height={40} />
-          <p className="font-extrabold text-4xl">{data.value}</p>
+          <p className="text-4xl font-extrabold">{data.value}</p>
         </div>
-        <p className="text-xl text-end">ELMIS</p>
+        <p className="text-end text-xl">ELMIS</p>
       </div>
     </div>
   );
@@ -113,23 +111,25 @@ function RampDom() {
       {/* Button: fixed top-right */}
       <div className="fixed top-5 right-5 z-50">
         <button
-          className={`text-black bg-white px-4 py-2 rounded shadow font-bold hover:bg-gray-100 ${
-            isLocked ? "opacity-50 cursor-not-allowed" : ""
+          className={`rounded bg-white px-4 py-2 font-bold text-black shadow hover:bg-gray-100 ${
+            isLocked ? "cursor-not-allowed opacity-50" : ""
           }`}
-          onClick={changeData}>
+          onClick={changeData}
+        >
           Change Data
         </button>
       </div>
 
       {/* Notification: fixed, vertically centered, left side */}
-      <div className="fixed top-0 left-0 w-[350px] h-screen flex items-center z-999 pointer-events-none ">
+      <div className="pointer-events-none fixed top-0 left-0 z-99 flex h-screen w-[350px] items-center">
         <AnimatePresence>
           {isVisible && (
             <motion.div
               initial={{ x: -400, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -400, opacity: 0 }}
-              transition={{ duration: 0.5 }}>
+              transition={{ duration: 0.5 }}
+            >
               <RampDomCard data={activeData} />
             </motion.div>
           )}

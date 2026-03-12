@@ -4,11 +4,13 @@ const links = [
   { href: "/rampdom", label: "RampDom" },
   { href: "/elmis", label: "Elmis" },
   { href: "/topfour", label: "Topfour" },
+  // { href: "/wwc", label: "WWC" },
+  { href: "/wwctwo", label: "WWC Two" },
 ];
 
 export default function Home() {
   return (
-    <div className="bg-transparent text-black h-screen grid place-content-around">
+    <div className="grid h-screen place-content-around bg-transparent text-black">
       <nav className="mx-auto w-max p-2">
         <ul className="flex flex-wrap items-center gap-2">
           {links.map((link) => (

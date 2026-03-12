@@ -3,11 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary: #26a599;
+  --primary-shade-one: #008e88;
+  --primary-shade-two: #007570;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-shade-one: var(--primary-shade-one);
+  --color-primary-shade-two: var(--primary-shade-two);
   --font-sans: var(--font-oswald);
 }
 
@@ -15,6 +21,9 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --primary: #26a599;
+    --primary-shade-one: #008e88;
+    --primary-shade-two: #007570;
   }
 }
 

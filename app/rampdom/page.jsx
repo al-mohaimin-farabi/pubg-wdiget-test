@@ -3,7 +3,7 @@ import RampDom from "@/components/RampDom";
 const RampDomPage = () => {
   return (
     <div className="bg-transparent">
-      <main className="min-h-screen ">
+      <main className="min-h-screen">
         <RampDom />
       </main>
     </div>
