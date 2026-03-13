@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 const WWCStats = () => {
   const { data, error, isLoading } = useGetWwcdTeamStatsQuery();
-  const [team, setTeam] = useState(data?.data[0]?.players);
+  const [team, setTeam] = useState(data?.data[0]?.players || []);
 
   useEffect(() => {
     if (isLoading) {
@@ -22,7 +22,7 @@ const WWCStats = () => {
 
   return (
     <Layout top className={""}>
-      <Title title={"WWCD Stats"} subtitle={"Grand Finals - Day 1 - Match 3"} />
+      <Title title={"WWCD Stats"} data={data?.game[0]} />
       <div className="mx-auto mt-16 flex h-[508px] w-max gap-6 px-16">
         {/* team stats */}
         <div className="space-y-8 uppercase">

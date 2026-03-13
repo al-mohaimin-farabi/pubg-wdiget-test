@@ -8,7 +8,7 @@ import Layout from "@/components/layout";
 
 const wwc = () => {
   const { data, error, isLoading } = useGetWwcdTeamStatsQuery();
-  const [team, setTeam] = useState(data?.data[0]?.players);
+  const [team, setTeam] = useState(data?.data[0]?.players || []);
 
   useEffect(() => {
     if (isLoading) {
@@ -62,6 +62,14 @@ const wwc = () => {
               />
             </div>
           ))}
+          {/* big title */}
+          {/* leading-none */}
+          <p className="text-primary absolute -top-10 left-1/2 -z-20 w-max -translate-x-1/2 text-center text-[220px] leading-[280px] font-extrabold uppercase">
+            <span className="stroked-text">Winner </span>
+            Winner
+            <br />
+            Chicken <span className="stroked-text">Dinner </span>
+          </p>
         </div>
       </div>
     </Layout>

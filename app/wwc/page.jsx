@@ -7,7 +7,7 @@ import { cn } from "../../lib/utils";
 
 const WWC = () => {
   const { data, error, isLoading } = useGetWwcdTeamStatsQuery();
-  const [team, setTeam] = useState(data?.data[0]?.players);
+  const [team, setTeam] = useState(data?.data[0]?.players || []);
 
   useEffect(() => {
     if (isLoading) {

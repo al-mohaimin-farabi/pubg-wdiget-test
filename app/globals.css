@@ -32,3 +32,12 @@ body {
   color: var(--foreground);
   font-family: var(--font-oswald), "Agency FB", sans-serif;
 }
+
+.stroked-text {
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: #888;
+  color: white; /* Sets the fill color of the text */
+}
+.wrapper {
+  @apply mx-auto mt-16 flex h-[508px] w-max gap-6 px-16;
+}
