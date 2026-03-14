@@ -31,6 +31,7 @@ const WWCStats = () => {
               {data?.data[0]?.team_name}
             </p>
             <Image
+              priority
               src={data?.data[0]?.team_image}
               width={180}
               height={180}

@@ -33,6 +33,7 @@ const ElmisPage = () => {
                   alt="ks_axe"
                   width={60}
                   height={60}
+                  priority
                 />
                 <div className="absolute -top-5 -right-8">
                   <Image
@@ -41,6 +42,7 @@ const ElmisPage = () => {
                     alt="ks_axe"
                     width={30}
                     height={20}
+                    priority
                   />
                 </div>
                 <div className="absolute -top-4 left-1 text-lg">#8</div>

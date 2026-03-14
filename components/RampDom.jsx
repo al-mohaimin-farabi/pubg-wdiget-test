@@ -59,9 +59,16 @@ const RampDomCard = ({ data }) => {
 
       {/* player ign and team logo */}
       <div className="relative flex h-[30px] w-full items-center justify-start gap-2 bg-[#D4DFEA] p-2">
-        <Image src={data.team_image} alt="Team Logo" width={20} height={20} />
+        <Image
+          priority
+          src={data.team_image}
+          alt="Team Logo"
+          width={20}
+          height={20}
+        />
         <p className="text-[#2F3475]">{data.player_ign}</p>
         <Image
+          priority
           className="absolute right-10 bottom-0 z-10 h-[100px] w-[120px]"
           src={data.player_thumbnail}
           alt="Player Thumbnail"
@@ -73,7 +80,13 @@ const RampDomCard = ({ data }) => {
       {/* elmis box */}
       <div className="absolute -top-12 -right-8 z-1 flex aspect-square flex-col justify-between border-4 border-[#DCE3FF] bg-linear-to-b from-[#6F6EBB] to-[#414098] p-3">
         <div className="flex items-center gap-2">
-          <Image src={elmisIcon} alt="Elmis Icon" width={40} height={40} />
+          <Image
+            priority
+            src={elmisIcon}
+            alt="Elmis Icon"
+            width={40}
+            height={40}
+          />
           <p className="text-4xl font-extrabold">{data.value}</p>
         </div>
         <p className="text-end text-xl">ELMIS</p>

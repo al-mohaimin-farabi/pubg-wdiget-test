@@ -35,6 +35,7 @@ const WWC = () => {
                 src={data?.data[0]?.team_image}
                 width={250}
                 height={250}
+                priority
               />
             </div>
             <div className="bg-primary mt-1 grid h-[20%] place-content-center">
@@ -70,6 +71,7 @@ const Player = ({ player, className }) => {
           src={player?.thumbnail}
           width={400}
           height={400}
+          priority
           className="absolute inset-0 z-10 h-full w-full object-cover"
         />
         <div className="absolute top-4 left-2 z-20 flex w-25 flex-col text-lg uppercase">

@@ -68,6 +68,7 @@ const Teambanner = ({ team }) => {
             height={400}
             src={team?.team_logo}
             alt="Team Logo"
+            priority
           />
         ) : (
           <div className="h-[400px] w-[400px] bg-gray-800" />

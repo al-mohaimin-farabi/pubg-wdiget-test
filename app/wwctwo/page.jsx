@@ -26,6 +26,7 @@ const wwc = () => {
         <div className="relative z-10 mx-auto mb-8 flex max-h-[180px] w-max">
           <div className="grid aspect-square place-content-center bg-black px-4">
             <Image
+              priority
               src={data?.data[0]?.team_image}
               className="aspect-square"
               width={100}
@@ -54,6 +55,7 @@ const wwc = () => {
               })}
             >
               <Image
+                priority
                 src={player.image}
                 width={600}
                 height={750}

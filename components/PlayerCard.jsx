@@ -6,6 +6,7 @@ const PlayerCard = ({ player, showTeamLogo = false, type = "", rank }) => {
       <div className="bg-primary">
         <div className="px-16">
           <Image
+            priority
             src={player?.image || player?.player_image}
             width={200}
             height={200}
@@ -51,7 +52,13 @@ const PlayerCard = ({ player, showTeamLogo = false, type = "", rank }) => {
       </div>
       {player?.team_logo && showTeamLogo && (
         <div className="absolute top-0 left-0 bg-black/20">
-          <Image src={player?.team_logo} width={64} height={64} alt="" />
+          <Image
+            priority
+            src={player?.team_logo}
+            width={64}
+            height={64}
+            alt=""
+          />
         </div>
       )}
       {rank && (

@@ -12,6 +12,7 @@ const MVPPage = ({ mvp, isGroup = false }) => {
   return (
     <Layout className={"relative"}>
       <Image
+        priority
         className="absolute bottom-0 left-1/2 z-20 -translate-x-1/2"
         src={mvp?.player_image}
         alt=""
