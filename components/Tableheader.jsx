@@ -12,7 +12,7 @@ const Tableheader = ({ overall = false }) => {
         )}
         <div className="w-[80.67px]">POS PTS</div>
         <div className="w-[80.67px]">Elims</div>
-        <div className="w-[80.67px]">Total</div>
+        <div className="w-[80.67px] pl-3">Total</div>
       </div>
     </div>
   );

@@ -31,7 +31,7 @@ const TableRow = ({ team, overall = false }) => {
       </div>
       {overall && (
         <div className=" min-w-[80.67px] p-2 text-xl font-bold text-black flex items-center"> 
-          <div className="w-full  text-center mr-3"> {team?.total_points}</div>
+          <div className="w-full  text-center "> {team?.total_points}</div>
         </div>
       )}
     </div>
