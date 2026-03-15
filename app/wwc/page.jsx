@@ -1,23 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
 import { useGetWwcdTeamStatsQuery } from "../../lib/services/api";
 import { cn } from "../../lib/utils";
 
 const WWC = () => {
-  const { data, error, isLoading } = useGetWwcdTeamStatsQuery();
-  const [team, setTeam] = useState(data?.data[0]?.players || []);
-
-  useEffect(() => {
-    if (isLoading) {
-      console.log("Loading...");
-    } else if (error) {
-      console.error("Error fetching data:", error);
-    } else if (data) {
-      setTeam(data?.data[0]?.players);
-    }
-  }, [data, error, isLoading]);
+  const { data } = useGetWwcdTeamStatsQuery();
+  const team = data?.data?.[0]?.players || [];
 
   // const teams = data?.data[0]?.players;
 
@@ -69,6 +58,7 @@ const Player = ({ player, className }) => {
       <div className="relative h-[85%] w-full overflow-hidden">
         <Image
           src={player?.thumbnail}
+          alt={player?.name || "Player thumbnail"}
           width={400}
           height={400}
           priority

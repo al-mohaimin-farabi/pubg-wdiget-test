@@ -4,22 +4,10 @@ import Layout from "@/components/layout";
 import PlayerCard from "@/components/PlayerCard";
 import Title from "@/components/Title";
 import { useGetTopPlayersGroupQuery } from "@/lib/services/api";
-import { useEffect, useState } from "react";
 
-const page = () => {
-  const { data, error, isLoading } = useGetTopPlayersGroupQuery();
-  const [team, setTeam] = useState(data?.data || []);
-
-  useEffect(() => {
-    if (isLoading) {
-      console.log("Loading...");
-    } else if (error) {
-      console.error("Error fetching data:", error);
-    } else if (data) {
-      setTeam(data?.data);
-      console.log(data?.data);
-    }
-  }, [data, error, isLoading]);
+const Page = () => {
+  const { data } = useGetTopPlayersGroupQuery();
+  const team = data?.data || [];
   return (
     <Layout top>
       <Title title="Overall Top Players" stageOnly data={data?.game[0]} />
@@ -30,7 +18,7 @@ const page = () => {
               key={player.id}
               player={player}
               type="OVERALL"
-              rank={idx+1}
+              rank={idx + 1}
               showTeamLogo
             />
           ))}
@@ -40,4 +28,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;

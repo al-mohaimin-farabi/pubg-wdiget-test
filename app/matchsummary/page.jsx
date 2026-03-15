@@ -3,7 +3,6 @@
 import Layout from "@/components/layout";
 import Title from "@/components/Title";
 import { useGetMatchSummaryQuery } from "@/lib/services/api";
-import { useEffect, useState } from "react";
 import { BiTargetLock } from "react-icons/bi";
 import { FaHeartPulse } from "react-icons/fa6";
 import { FaPersonFalling } from "react-icons/fa6";
@@ -12,18 +11,7 @@ import { FaHandshakeSimple } from "react-icons/fa6";
 import { FaCarCrash } from "react-icons/fa";
 
 const MatchSummary = () => {
-  const { data, error, isLoading } = useGetMatchSummaryQuery();
-  const [team, setTeam] = useState(data?.data[0]?.players || []);
-
-  useEffect(() => {
-    if (isLoading) {
-      console.log("Loading...");
-    } else if (error) {
-      console.error("Error fetching data:", error);
-    } else if (data) {
-      setTeam(data?.data[0]?.players);
-    }
-  }, [data, error, isLoading]);
+  const { data } = useGetMatchSummaryQuery();
 
   return (
     <Layout top>

@@ -3,7 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --primary: #26a599;
+  --primary: #a54e26;
   --primary-shade-one: #008e88;
   --primary-shade-two: #007570;
 }
@@ -31,6 +31,7 @@ body {
   background: transparent;
   color: var(--foreground);
   font-family: var(--font-oswald), "Agency FB", sans-serif;
+  box-sizing: border-box;
 }
 
 .stroked-text {

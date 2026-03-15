@@ -1,24 +1,13 @@
 "use client";
 
 import { useGetWwcdTeamStatsQuery } from "@/lib/services/api";
-import { useState, useEffect } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import Layout from "@/components/layout";
 
-const wwc = () => {
-  const { data, error, isLoading } = useGetWwcdTeamStatsQuery();
-  const [team, setTeam] = useState(data?.data[0]?.players || []);
-
-  useEffect(() => {
-    if (isLoading) {
-      console.log("Loading...");
-    } else if (error) {
-      console.error("Error fetching data:", error);
-    } else if (data) {
-      setTeam(data?.data[0]?.players);
-    }
-  }, [data, error, isLoading]);
+const WwcTwo = () => {
+  const { data } = useGetWwcdTeamStatsQuery();
+  const team = data?.data?.[0]?.players || [];
 
   return (
     <Layout>
@@ -28,6 +17,7 @@ const wwc = () => {
             <Image
               priority
               src={data?.data[0]?.team_image}
+              alt="Team Logo"
               className="aspect-square"
               width={100}
               height={100}
@@ -78,7 +68,7 @@ const wwc = () => {
   );
 };
 
-export default wwc;
+export default WwcTwo;
 
 const DataBox = ({ title, data }) => {
   return (

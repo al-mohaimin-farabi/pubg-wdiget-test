@@ -3,7 +3,6 @@ import Layout from "@/components/layout";
 import Title from "@/components/Title";
 import { useGetHeadToHeadQuery } from "@/lib/services/api";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 
 const statsConfig = [
   { label: "Damages", key: "total_damage" },
@@ -14,21 +13,9 @@ const statsConfig = [
 ];
 
 const HeadToHead = () => {
-  const { data, error, isLoading } = useGetHeadToHeadQuery();
-  const [teamA, setTeamA] = useState(null);
-  const [teamB, setTeamB] = useState(null);
-
-  useEffect(() => {
-    if (isLoading) {
-      console.log("Loading...");
-    } else if (error) {
-      console.error("Error fetching data:", error);
-    } else if (data) {
-      console.log("data a", data?.data[0]);
-      setTeamA(data?.data[0]);
-      setTeamB(data?.data[1]);
-    }
-  }, [data, error, isLoading]);
+  const { data } = useGetHeadToHeadQuery();
+  const teamA = data?.data?.[0] || null;
+  const teamB = data?.data?.[1] || null;
   return (
     <Layout top>
       <Title title="Team Head-to-Head" data={data?.game[0]} />

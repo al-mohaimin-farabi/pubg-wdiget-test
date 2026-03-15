@@ -4,22 +4,10 @@ import Layout from "@/components/layout";
 import PlayerCard from "@/components/PlayerCard";
 import Title from "@/components/Title";
 import { useGetTopPlayersQuery } from "@/lib/services/api";
-import { useEffect, useState } from "react";
 
 const TopPlayerMatch = () => {
-  const { data, error, isLoading } = useGetTopPlayersQuery();
-  const [team, setTeam] = useState(data?.data || []);
-
-  useEffect(() => {
-    if (isLoading) {
-      console.log("Loading...");
-    } else if (error) {
-      console.error("Error fetching data:", error);
-    } else if (data) {
-      setTeam(data?.data);
-      console.log(data?.data);
-    }
-  }, [data, error, isLoading]);
+  const { data } = useGetTopPlayersQuery();
+  const team = data?.data || [];
 
   return (
     <Layout top>

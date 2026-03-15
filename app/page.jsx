@@ -33,6 +33,8 @@ const linksGroup = [
       { href: "/head-to-head", label: "Head to Head" },
       { href: "/mvp-match", label: "Mvp Match" },
       { href: "/mvp-group", label: "Mvp Group" },
+      { href: "/after-match-score", label: "After Match Score" },
+      { href: "/after-match-score-group", label: "After Match Score Group" },
     ],
   },
 ];

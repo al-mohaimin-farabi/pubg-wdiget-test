@@ -4,21 +4,10 @@ import PlayerCard from "@/components/PlayerCard";
 import Title from "@/components/Title";
 import { useGetWwcdTeamStatsQuery } from "@/lib/services/api";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 
 const WWCStats = () => {
-  const { data, error, isLoading } = useGetWwcdTeamStatsQuery();
-  const [team, setTeam] = useState(data?.data[0]?.players || []);
-
-  useEffect(() => {
-    if (isLoading) {
-      console.log("Loading...");
-    } else if (error) {
-      console.error("Error fetching data:", error);
-    } else if (data) {
-      setTeam(data?.data[0]?.players);
-    }
-  }, [data, error, isLoading]);
+  const { data } = useGetWwcdTeamStatsQuery();
+  const team = data?.data?.[0]?.players || [];
 
   return (
     <Layout top className={""}>
