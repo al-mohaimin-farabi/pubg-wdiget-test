@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import getPlayerMapdata from "@/utils/getPlayerMapdata";
 
 // --- CONFIGURATION ---
 const CANVAS_SIZE = 1080;
@@ -28,48 +29,33 @@ const MAPS = {
   },
 };
 
-const INITIAL_STATE = {
-  mapType: "Erangel",
-  TotalPlayerList: [
-    {
-      uId: 1,
-      playerName: "waveREAPER7",
-      teamId: 6,
-      location: { x: 400000, y: 400000, z: 0 },
-      bHasDied: false,
-    },
-    {
-      uId: 2,
-      playerName: "iVoidReign",
-      teamId: 6,
-      location: { x: 415000, y: 405000, z: 0 },
-      bHasDied: false,
-    },
-    {
-      uId: 3,
-      playerName: "TLS_Sniper",
-      teamId: 8,
-      location: { x: 250000, y: 600000, z: 0 },
-      bHasDied: false,
-    },
-  ],
-  ZoneState: {
-    SafeZone: { x: 350000, y: 420000, radius: 150000 },
-    BlueZone: { x: 400000, y: 400000, radius: 280000 },
-    RedZone: { x: 550000, y: 200000, radius: 40000 },
-  },
-  FlightPath: {
-    isActive: true,
-    startX: 150000,
-    startY: 50000,
-    endX: 650000,
-    endY: 750000,
-  },
-};
-
 export default function PubgMapSimulator() {
-  const [simulatorState, setSimulatorState] = useState(INITIAL_STATE);
+  const [simulatorState, setSimulatorState] = useState(null);
   const gameStateRef = useRef(simulatorState);
+
+  useEffect(() => {
+    getPlayerMapdata().then((data) => {
+      if (data) {
+        setSimulatorState({
+          mapType: "Erangel",
+          TotalPlayerList: data,
+          ZoneState: {
+            SafeZone: { x: 350000, y: 420000, radius: 150000 },
+            BlueZone: { x: 400000, y: 400000, radius: 280000 },
+            RedZone: { x: 550000, y: 200000, radius: 40000 },
+          },
+          FlightPath: {
+            isActive: true,
+            startX: 150000,
+            startY: 50000,
+            endX: 650000,
+            endY: 750000,
+          },
+        });
+        renderStateRef.current.players = {};
+      }
+    });
+  }, []);
 
   // visual state tracker. Now includes `blueZoneAnim` for time-based tracking.
   const renderStateRef = useRef({
@@ -104,6 +90,11 @@ export default function PubgMapSimulator() {
     const ctx = canvas.getContext("2d");
     const state = gameStateRef.current;
     const renderPosMap = renderStateRef.current;
+
+    if (!state) {
+      requestRef.current = requestAnimationFrame(renderLoop);
+      return;
+    }
 
     const currentMapSize = MAPS[state.mapType]?.size || 800000;
     const scale = CANVAS_SIZE / currentMapSize;
@@ -354,7 +345,7 @@ export default function PubgMapSimulator() {
     }));
   };
 
-  const currentMapUnits = MAPS[simulatorState.mapType]?.size || 800000;
+  const currentMapUnits = MAPS[simulatorState?.mapType]?.size || 800000;
 
   return (
     <div className="flex h-screen overflow-hidden font-sans text-white">
@@ -375,7 +366,7 @@ export default function PubgMapSimulator() {
           </label>
           <select
             className="w-full rounded border border-neutral-600 bg-neutral-700 p-2 text-sm text-white outline-none"
-            value={simulatorState.mapType}
+            value={simulatorState?.mapType ?? "Erangel"}
             onChange={handleMapChange}
           >
             <option value="Erangel">Erangel (8x8km)</option>
@@ -409,7 +400,7 @@ export default function PubgMapSimulator() {
                 max={currentMapUnits}
                 step="1000"
                 className="w-full accent-blue-500"
-                value={simulatorState.ZoneState.BlueZone.radius}
+                value={simulatorState?.ZoneState?.BlueZone?.radius ?? 0}
                 onChange={(e) =>
                   updateZone("BlueZone", "radius", e.target.value)
                 }
@@ -424,7 +415,7 @@ export default function PubgMapSimulator() {
                   max={currentMapUnits}
                   step="1000"
                   className="w-full accent-blue-500"
-                  value={simulatorState.ZoneState.BlueZone.x}
+                  value={simulatorState?.ZoneState?.BlueZone?.x ?? 0}
                   onChange={(e) => updateZone("BlueZone", "x", e.target.value)}
                 />
               </div>
@@ -436,7 +427,7 @@ export default function PubgMapSimulator() {
                   max={currentMapUnits}
                   step="1000"
                   className="w-full accent-blue-500"
-                  value={simulatorState.ZoneState.BlueZone.y}
+                  value={simulatorState?.ZoneState?.BlueZone?.y ?? 0}
                   onChange={(e) => updateZone("BlueZone", "y", e.target.value)}
                 />
               </div>
@@ -453,7 +444,7 @@ export default function PubgMapSimulator() {
                 max={currentMapUnits}
                 step="1000"
                 className="w-full accent-white"
-                value={simulatorState.ZoneState.SafeZone.radius}
+                value={simulatorState?.ZoneState?.SafeZone?.radius ?? 0}
                 onChange={(e) =>
                   updateZone("SafeZone", "radius", e.target.value)
                 }
@@ -468,7 +459,7 @@ export default function PubgMapSimulator() {
                   max={currentMapUnits}
                   step="1000"
                   className="w-full accent-white"
-                  value={simulatorState.ZoneState.SafeZone.x}
+                  value={simulatorState?.ZoneState?.SafeZone?.x ?? 0}
                   onChange={(e) => updateZone("SafeZone", "x", e.target.value)}
                 />
               </div>
@@ -480,7 +471,7 @@ export default function PubgMapSimulator() {
                   max={currentMapUnits}
                   step="1000"
                   className="w-full accent-white"
-                  value={simulatorState.ZoneState.SafeZone.y}
+                  value={simulatorState?.ZoneState?.SafeZone?.y ?? 0}
                   onChange={(e) => updateZone("SafeZone", "y", e.target.value)}
                 />
               </div>
@@ -497,7 +488,7 @@ export default function PubgMapSimulator() {
                 max={currentMapUnits}
                 step="1000"
                 className="w-full accent-red-500"
-                value={simulatorState.ZoneState.RedZone.radius}
+                value={simulatorState?.ZoneState?.RedZone?.radius ?? 0}
                 onChange={(e) =>
                   updateZone("RedZone", "radius", e.target.value)
                 }
@@ -512,7 +503,7 @@ export default function PubgMapSimulator() {
                   max={currentMapUnits}
                   step="1000"
                   className="w-full accent-red-500"
-                  value={simulatorState.ZoneState.RedZone.x}
+                  value={simulatorState?.ZoneState?.RedZone?.x ?? 0}
                   onChange={(e) => updateZone("RedZone", "x", e.target.value)}
                 />
               </div>
@@ -524,7 +515,7 @@ export default function PubgMapSimulator() {
                   max={currentMapUnits}
                   step="1000"
                   className="w-full accent-red-500"
-                  value={simulatorState.ZoneState.RedZone.y}
+                  value={simulatorState?.ZoneState?.RedZone?.y ?? 0}
                   onChange={(e) => updateZone("RedZone", "y", e.target.value)}
                 />
               </div>
@@ -536,7 +527,7 @@ export default function PubgMapSimulator() {
           <h3 className="border-b border-neutral-700 pb-2 text-sm font-semibold text-neutral-300">
             Player Locations
           </h3>
-          {simulatorState.TotalPlayerList.map((player, index) => (
+          {simulatorState?.TotalPlayerList?.map((player, index) => (
             <div key={player.uId} className="rounded bg-neutral-800 p-3">
               <span
                 className="text-xs font-bold"
