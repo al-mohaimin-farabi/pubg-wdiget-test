@@ -12,7 +12,7 @@ const statsConfig = [
   { label: "Total Points", key: "points" },
 ];
 
-const HeadToHead = () => {
+function HeadToHead() {
   const { data } = useGetHeadToHeadQuery();
   const teamA = data?.data?.[0] || null;
   const teamB = data?.data?.[1] || null;
@@ -22,7 +22,7 @@ const HeadToHead = () => {
       <div className="wrapper">
         <div className="grid grid-cols-4 gap-4">
           <Teambanner team={teamA} />
-          <div className="col-span-2 flex h-[400px] flex-col gap-[22px]">
+          <div className="col-span-2 flex h-100 flex-col gap-5.5">
             {statsConfig.map((stat, idx) => (
               <CompareRow
                 key={idx}
@@ -38,7 +38,7 @@ const HeadToHead = () => {
       </div>
     </Layout>
   );
-};
+}
 
 export default HeadToHead;
 
@@ -58,7 +58,7 @@ const Teambanner = ({ team }) => {
             priority
           />
         ) : (
-          <div className="h-[400px] w-[400px] bg-gray-800" />
+          <div className="h-100 w-100 bg-gray-800" />
         )}
       </div>
     </div>

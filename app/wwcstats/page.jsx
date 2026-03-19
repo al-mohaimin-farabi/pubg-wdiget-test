@@ -5,14 +5,14 @@ import Title from "@/components/Title";
 import { useGetWwcdTeamStatsQuery } from "@/lib/services/api";
 import Image from "next/image";
 
-const WWCStats = () => {
+function WWCStats() {
   const { data } = useGetWwcdTeamStatsQuery();
   const team = data?.data?.[0]?.players || [];
 
   return (
     <Layout top className={""}>
       <Title title={"WWCD Stats"} data={data?.game[0]} />
-      <div className="mx-auto mt-16 flex h-[508px] w-max gap-6 px-16">
+      <div className="mx-auto mt-16 flex h-127 w-max gap-6 px-16">
         {/* team stats */}
         <div className="space-y-8 uppercase">
           <div className="bg-primary-shade-two mx-auto w-max">
@@ -42,14 +42,14 @@ const WWCStats = () => {
       </div>
     </Layout>
   );
-};
+}
 
 export default WWCStats;
 
 const Databox = ({ title, value }) => {
   return (
-    <div className="bg-primary relative w-[220px] px-18 py-8">
-      <div className="bg-primary-shade-one absolute -top-[15px] left-1/2 h-[30px] translate-x-[-50%] p-1 whitespace-nowrap">
+    <div className="bg-primary relative w-55 px-18 py-8">
+      <div className="bg-primary-shade-one absolute -top-3.75 left-1/2 h-7.5 translate-x-[-50%] p-1 whitespace-nowrap">
         {title}
       </div>
       <p className="text-center text-5xl font-bold text-black">{value}</p>

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useGetWwcdTeamStatsQuery } from "../../lib/services/api";
 import { cn } from "../../lib/utils";
 
-const WWC = () => {
+function WWC() {
   const { data } = useGetWwcdTeamStatsQuery();
   const team = data?.data?.[0]?.players || [];
 
@@ -48,7 +48,7 @@ const WWC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default WWC;
 
@@ -65,15 +65,15 @@ const Player = ({ player, className }) => {
           className="absolute inset-0 z-10 h-full w-full object-cover"
         />
         <div className="absolute top-4 left-2 z-20 flex w-25 flex-col text-lg uppercase">
-          <div className="grid h-[80px] place-content-center bg-black text-center">
+          <div className="grid h-20 place-content-center bg-black text-center">
             <p>ELIMS</p>
             <p className="text-primary text-2xl">00</p>
           </div>
-          <div className="grid h-[80px] place-content-center bg-black text-center">
+          <div className="grid h-20 place-content-center bg-black text-center">
             <p>KnockOuts</p>
             <p className="text-primary text-2xl">00</p>
           </div>
-          <div className="bg-primary grid h-[80px] place-content-center text-center">
+          <div className="bg-primary grid h-20 place-content-center text-center">
             <p>Dmg taken</p>
             <p className="text-2xl text-white">00</p>
           </div>

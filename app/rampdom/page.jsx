@@ -1,6 +1,6 @@
 import RampDom from "@/components/RampDom";
 
-const RampDomPage = () => {
+function RampDomPage() {
   return (
     <div className="bg-transparent">
       <main className="min-h-screen">
@@ -8,6 +8,6 @@ const RampDomPage = () => {
       </main>
     </div>
   );
-};
+}
 
 export default RampDomPage;

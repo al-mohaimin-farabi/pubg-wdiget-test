@@ -297,7 +297,7 @@ const data = {
   ],
 };
 
-const TopFour = () => {
+function TopFour() {
   return (
     <div className="relative h-screen bg-transparent">
       <div className="absolute top-12 left-1/2 grid -translate-x-1/2 grid-cols-4 items-center gap-x-8 gap-y-4">
@@ -305,7 +305,7 @@ const TopFour = () => {
           <div
             key={index}
             className={cn(
-              "relative flex h-12 w-[220px] border-b-2 border-l-4 border-blue-400 bg-[#414098]",
+              "relative flex h-12 w-55 border-b-2 border-l-4 border-blue-400 bg-[#414098]",
             )}
           >
             <div className="flex w-full items-center justify-between gap-2">
@@ -329,7 +329,7 @@ const TopFour = () => {
               </div>
               <div className="flex h-full gap-2 bg-blue-200 p-2">
                 {team?.players?.map((player, index) => (
-                  <div key={index} className={`relative w-[6px] bg-gray-400`}>
+                  <div key={index} className={`relative w-1.5 bg-gray-400`}>
                     <div
                       className={cn(
                         "absolute bottom-0 w-full transition-all duration-300",
@@ -351,7 +351,7 @@ const TopFour = () => {
           <div
             key={index}
             className={cn(
-              "flex w-[220px] items-center",
+              "flex w-55 items-center",
               team?.is_eliminated && "hidden",
             )}
           >
@@ -364,6 +364,6 @@ const TopFour = () => {
       </div>
     </div>
   );
-};
+}
 
 export default TopFour;

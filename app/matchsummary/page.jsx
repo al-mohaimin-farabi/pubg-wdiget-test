@@ -10,7 +10,7 @@ import { GiGrenade } from "react-icons/gi";
 import { FaHandshakeSimple } from "react-icons/fa6";
 import { FaCarCrash } from "react-icons/fa";
 
-const MatchSummary = () => {
+function MatchSummary() {
   const { data } = useGetMatchSummaryQuery();
 
   return (
@@ -51,15 +51,15 @@ const MatchSummary = () => {
       </div>
     </Layout>
   );
-};
+}
 
 export default MatchSummary;
 
 const Databox = ({ title, value, icon }) => {
   return (
     // px-18 py-8
-    <div className="bg-primary-shade-two relative flex h-[180px] w-[400px]">
-      <div className="bg-primary-shade-one absolute -top-[20px] left-1/2 h-[40px] translate-x-[-50%] px-4 py-1 text-xl whitespace-nowrap uppercase">
+    <div className="bg-primary-shade-two relative flex h-45 w-100">
+      <div className="bg-primary-shade-one absolute -top-5 left-1/2 h-10 translate-x-[-50%] px-4 py-1 text-xl whitespace-nowrap uppercase">
         {title}
       </div>
       <div className="mx-auto flex w-[40%] items-center justify-center self-center text-center text-7xl">

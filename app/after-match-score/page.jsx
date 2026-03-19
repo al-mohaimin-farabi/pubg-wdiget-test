@@ -7,7 +7,7 @@ import TableRow from "@/components/TableRow";
 import Title from "@/components/Title";
 import { useGetAfterMatchScoreQuery } from "@/lib/services/api";
 
-const AfterMatchScore = () => {
+function AfterMatchScore() {
   const { data } = useGetAfterMatchScoreQuery();
   const teamOne = data?.data[0] || [];
   const colOne = data?.data.slice(1, 7) || [];
@@ -17,7 +17,7 @@ const AfterMatchScore = () => {
     <Layout top>
       <Title title="Match Standing" stageOnly data={data?.game[0]} />
       <div className="wrapper mx-auto grid h-auto! w-full! grid-cols-2 gap-4">
-        <div className="mx-auto w-[860px] space-y-2">
+        <div className="mx-auto w-215 space-y-2">
           <HighLightTeam teamOne={teamOne} />
 
           <Tableheader />
@@ -27,7 +27,7 @@ const AfterMatchScore = () => {
             ))}
           </div>
         </div>
-        <div className="mx-auto w-[860px] space-y-2">
+        <div className="mx-auto w-215 space-y-2">
           <Tableheader />
           <div className="space-y-2">
             {colTwo.map((team) => (
@@ -38,6 +38,6 @@ const AfterMatchScore = () => {
       </div>
     </Layout>
   );
-};
+}
 
 export default AfterMatchScore;
