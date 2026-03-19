@@ -74,6 +74,10 @@ const INITIAL_STATE = {
 export default function PubgMapSimulator() {
   const [simulatorState, setSimulatorState] = useState(INITIAL_STATE);
   const gameStateRef = useRef(simulatorState);
+
+  // NEW: This Ref tracks the *visual* position for animation, separate from the target data
+  const renderStateRef = useRef({});
+
   const canvasRef = useRef(null);
   const imagesRef = useRef({});
   const requestRef = useRef();
@@ -102,6 +106,7 @@ export default function PubgMapSimulator() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     const state = gameStateRef.current;
+    const renderPosMap = renderStateRef.current;
 
     // =======================================================================
     // THE CRITICAL MATH: CALCULATING THE SCALE MAP RATIO
@@ -196,10 +201,27 @@ export default function PubgMapSimulator() {
       if (player.bHasDied) return;
 
       // =====================================================================
-      // PINPOINT PLAYER POSITION MATH
+      // SMOOTH ANIMATION (LERPING) MATH
       // =====================================================================
-      const px = player.location.x * scale;
-      const py = player.location.y * scale;
+      // If the player doesn't exist in our visual tracker yet, add them at their exact spot.
+      if (!renderPosMap[player.uId]) {
+        renderPosMap[player.uId] = {
+          x: player.location.x,
+          y: player.location.y,
+        };
+      }
+
+      const visualPos = renderPosMap[player.uId];
+
+      // Lerp Formula: current = current + (target - current) * factor
+      // A factor of 0.1 means move 10% of the distance to the target every single frame.
+      // This creates a smooth slide that slows down as it reaches the destination.
+      visualPos.x += (player.location.x - visualPos.x) * 0.1;
+      visualPos.y += (player.location.y - visualPos.y) * 0.1;
+
+      // Now scale the *smoothly animated* position for the Canvas
+      const px = visualPos.x * scale;
+      const py = visualPos.y * scale;
 
       // Draw Player Dot exactly at (px, py)
       ctx.beginPath();
@@ -287,6 +309,10 @@ export default function PubgMapSimulator() {
       endY: Math.round(newState.FlightPath.endY * ratio),
     };
 
+    // When the map changes size, clear the visual render state so players instantly snap
+    // to their new scaled positions rather than sliding slowly across the entire screen.
+    renderStateRef.current = {};
+
     setSimulatorState(newState);
   };
 
@@ -294,7 +320,7 @@ export default function PubgMapSimulator() {
   const currentMapUnits = MAPS[simulatorState.mapType]?.size || 800000;
 
   return (
-    <div className="flex h-screen overflow-hidden font-sans text-white">
+    <div className="flex h-screen overflow-hidden  font-sans text-white">
       {/* LEFT SIDE: Control Panel */}
       <div className="flex w-87.5 shrink-0 flex-col gap-6 overflow-y-auto border-r border-neutral-700 bg-neutral-800 p-6">
         <div>
@@ -516,7 +542,7 @@ export default function PubgMapSimulator() {
 
       {/* RIGHT SIDE: Canvas Rendering */}
       <div className="flex flex-1 items-start justify-end">
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden border-4 border-red-800 shadow-2xl shadow-black/50">
           <canvas
             ref={canvasRef}
             width={CANVAS_SIZE}
