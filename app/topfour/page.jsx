@@ -310,12 +310,19 @@ const TopFour = () => {
           >
             <div className="flex w-full items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Image src={"/flag.png"} alt="logo" width={35} height={40} />
+                <Image
+                  src={"/flag.png"}
+                  alt="logo"
+                  width={35}
+                  height={40}
+                  priority
+                />
                 <Image
                   src={"/KS_AXE_2020.png"}
                   alt="logo"
                   width={35}
                   height={40}
+                  priority
                 />
 
                 <p className="font-bold text-white">{team.clan_tag}</p>

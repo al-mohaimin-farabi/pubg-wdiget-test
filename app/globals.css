@@ -3,11 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary: #a54e26;
+  --primary-shade-one: #008e88;
+  --primary-shade-two: #007570;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-shade-one: var(--primary-shade-one);
+  --color-primary-shade-two: var(--primary-shade-two);
   --font-sans: var(--font-oswald);
 }
 
@@ -15,6 +21,9 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --primary: #26a599;
+    --primary-shade-one: #008e88;
+    --primary-shade-two: #007570;
   }
 }
 
@@ -22,4 +31,14 @@ body {
   background: transparent;
   color: var(--foreground);
   font-family: var(--font-oswald), "Agency FB", sans-serif;
+  box-sizing: border-box;
+}
+
+.stroked-text {
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: #888;
+  color: white; /* Sets the fill color of the text */
+}
+.wrapper {
+  @apply mx-auto mt-16 flex h-[508px] w-max gap-6 px-16;
 }
