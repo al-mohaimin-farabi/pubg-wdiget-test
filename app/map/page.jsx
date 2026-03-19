@@ -67,7 +67,6 @@ const INITIAL_STATE = {
   },
 };
 
-
 // PDF attached for unerstanding
 
 export default function PubgMapSimulator() {
