@@ -212,76 +212,81 @@ export default function PubgMapSimulator() {
     const planeStopY  = parseFloat(gi?.PlaneStopLocY  ?? 0) * scale;
     const planeAngle  = Math.atan2(planeStopY - planeStartY, planeStopX - planeStartX);
 
-    // Full dashed path line
-    ctx.beginPath();
-    ctx.moveTo(planeStartX, planeStartY);
-    ctx.lineTo(planeStopX, planeStopY);
-    ctx.lineWidth = 1.5 / vp.zoom;
-    ctx.strokeStyle = "rgba(255,255,255,0.3)";
-    ctx.setLineDash([10 / vp.zoom, 7 / vp.zoom]);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    // Plane flies once from start → end over 60s, then disappears
+    const PLANE_DURATION = 60000;
+    if (!rp.planeStartTime) rp.planeStartTime = timestamp;
+    const planeT = Math.min((timestamp - rp.planeStartTime) / PLANE_DURATION, 1.0);
+    const planeActive = planeT < 1.0;
 
-    // Plane position (loops every 60s)
-    const planeT = (timestamp % 60000) / 60000;
-    const planePx = planeStartX + (planeStopX - planeStartX) * planeT;
-    const planePy = planeStartY + (planeStopY - planeStartY) * planeT;
+    if (planeActive) {
+      const planePx = planeStartX + (planeStopX - planeStartX) * planeT;
+      const planePy = planeStartY + (planeStopY - planeStartY) * planeT;
 
-    // Plane: canvas-drawn shape — always exactly aligned, no emoji font issues.
-    // Shape is designed pointing RIGHT (0°), rotated to planeAngle.
-    ctx.save();
-    ctx.translate(planePx, planePy);
-    ctx.rotate(planeAngle);
-    ctx.shadowColor = "rgba(0,0,0,0.7)";
-    ctx.shadowBlur = 5 / vp.zoom;
-    ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = "rgba(0,0,0,0.4)";
-    ctx.lineWidth = 0.5 / vp.zoom;
-    const s = 14 / vp.zoom;
+      // Full dashed path line (always start → end)
+      ctx.beginPath();
+      ctx.moveTo(planeStartX, planeStartY);
+      ctx.lineTo(planeStopX, planeStopY);
+      ctx.lineWidth = 1.5 / vp.zoom;
+      ctx.strokeStyle = "rgba(255,255,255,0.3)";
+      ctx.setLineDash([10 / vp.zoom, 7 / vp.zoom]);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
-    // Fuselage
-    ctx.beginPath();
-    ctx.ellipse(0, 0, s * 1.5, s * 0.2, 0, 0, Math.PI * 2);
-    ctx.fill(); ctx.stroke();
+      // Plane shape pointing RIGHT (0°), rotated to planeAngle
+      ctx.save();
+      ctx.translate(planePx, planePy);
+      ctx.rotate(planeAngle);
+      ctx.shadowColor = "rgba(0,0,0,0.7)";
+      ctx.shadowBlur = 5 / vp.zoom;
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "rgba(0,0,0,0.4)";
+      ctx.lineWidth = 0.5 / vp.zoom;
+      const s = 14 / vp.zoom;
 
-    // Left wing
-    ctx.beginPath();
-    ctx.moveTo(s * 0.15, 0);
-    ctx.lineTo(-s * 0.4, -s * 1.1);
-    ctx.lineTo(-s * 0.85, -s * 0.6);
-    ctx.lineTo(-s * 0.25, 0);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+      // Fuselage
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 1.5, s * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
 
-    // Right wing (mirror)
-    ctx.beginPath();
-    ctx.moveTo(s * 0.15, 0);
-    ctx.lineTo(-s * 0.4, s * 1.1);
-    ctx.lineTo(-s * 0.85, s * 0.6);
-    ctx.lineTo(-s * 0.25, 0);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+      // Left wing
+      ctx.beginPath();
+      ctx.moveTo(s * 0.15, 0);
+      ctx.lineTo(-s * 0.4, -s * 1.1);
+      ctx.lineTo(-s * 0.85, -s * 0.6);
+      ctx.lineTo(-s * 0.25, 0);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
 
-    // Tail fin left
-    ctx.beginPath();
-    ctx.moveTo(-s * 1.1, 0);
-    ctx.lineTo(-s * 1.35, -s * 0.45);
-    ctx.lineTo(-s * 1.5, -s * 0.15);
-    ctx.lineTo(-s * 1.2, 0);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+      // Right wing (mirror)
+      ctx.beginPath();
+      ctx.moveTo(s * 0.15, 0);
+      ctx.lineTo(-s * 0.4, s * 1.1);
+      ctx.lineTo(-s * 0.85, s * 0.6);
+      ctx.lineTo(-s * 0.25, 0);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
 
-    // Tail fin right (mirror)
-    ctx.beginPath();
-    ctx.moveTo(-s * 1.1, 0);
-    ctx.lineTo(-s * 1.35, s * 0.45);
-    ctx.lineTo(-s * 1.5, s * 0.15);
-    ctx.lineTo(-s * 1.2, 0);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+      // Tail fin left
+      ctx.beginPath();
+      ctx.moveTo(-s * 1.1, 0);
+      ctx.lineTo(-s * 1.35, -s * 0.45);
+      ctx.lineTo(-s * 1.5, -s * 0.15);
+      ctx.lineTo(-s * 1.2, 0);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
 
-    ctx.shadowBlur = 0;
-    ctx.restore();
+      // Tail fin right (mirror)
+      ctx.beginPath();
+      ctx.moveTo(-s * 1.1, 0);
+      ctx.lineTo(-s * 1.35, s * 0.45);
+      ctx.lineTo(-s * 1.5, s * 0.15);
+      ctx.lineTo(-s * 1.2, 0);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
 
     // =====================================================================
     // PLAYERS (asymptotic lerp)
@@ -438,7 +443,7 @@ export default function PubgMapSimulator() {
       };
     });
 
-    renderStateRef.current = { players: {}, circles: [], blueZoneAnim: null, viewport: null };
+    renderStateRef.current = { players: {}, circles: [], blueZoneAnim: null, viewport: null, planeStartTime: null };
   };
 
   const currentMapUnits = MAPS[simulatorState?.mapType]?.size || 800000;
