@@ -5,6 +5,19 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    plugins: ["react", "react-hooks", "react-compiler"],
+    extends: [
+      "plugin:react/recommended",
+      "plugin:react-hooks/recommended",
+      "plugin:react-compiler/recommended",
+    ],
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

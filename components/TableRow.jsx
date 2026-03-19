@@ -3,7 +3,7 @@ import Image from "next/image";
 const TableRow = ({ team, overall = false }) => {
   return (
     <div className="bg-primary flex">
-      <div className="bg-primary-shade-two grid min-w-[60px]! place-items-center p-3 text-2xl font-bold text-white">
+      <div className="bg-primary-shade-two grid min-w-15! place-items-center p-3 text-2xl font-bold text-white">
         #{team?.position}
       </div>
       <div className="flex w-full items-center gap-2 px-2">
@@ -30,8 +30,8 @@ const TableRow = ({ team, overall = false }) => {
         {!overall && <div className="w-[80.67px]">{team?.points}</div>}
       </div>
       {overall && (
-        <div className=" min-w-[80.67px] p-2 text-xl font-bold text-black flex items-center"> 
-          <div className="w-full  text-center "> {team?.total_points}</div>
+        <div className="flex min-w-[80.67px] items-center p-2 text-xl font-bold text-black">
+          <div className="w-full text-center"> {team?.total_points}</div>
         </div>
       )}
     </div>

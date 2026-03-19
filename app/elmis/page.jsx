@@ -2,16 +2,16 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 
-const ElmisPage = () => {
+function ElmisPage() {
   return (
     <div className="relative h-screen bg-transparent">
-      <div className="absolute top-[200px] left-1/2 -translate-x-1/2 transform">
+      <div className="absolute top-50 left-1/2 -translate-x-1/2 transform">
         {/* Yellow Div */}
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: 280 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="relative h-[100px] overflow-hidden border-t-2 border-yellow-600 bg-yellow-700"
+          className="relative h-25 overflow-hidden border-t-2 border-yellow-600 bg-yellow-700"
         >
           {/* Blue Div */}
           <motion.div
@@ -63,7 +63,7 @@ const ElmisPage = () => {
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ duration: 0.5, delay: 1.1, ease: "easeOut" }}
-                  className="my-1 h-[2px] w-full origin-center bg-blue-300"
+                  className="my-1 h-0.5 w-full origin-center bg-blue-300"
                 />
 
                 <div className="overflow-hidden">
@@ -83,6 +83,6 @@ const ElmisPage = () => {
       </div>
     </div>
   );
-};
+}
 
 export default ElmisPage;

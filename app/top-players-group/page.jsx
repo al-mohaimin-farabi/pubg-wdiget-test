@@ -5,13 +5,13 @@ import PlayerCard from "@/components/PlayerCard";
 import Title from "@/components/Title";
 import { useGetTopPlayersGroupQuery } from "@/lib/services/api";
 
-const Page = () => {
+function TopPlayersGroup() {
   const { data } = useGetTopPlayersGroupQuery();
   const team = data?.data || [];
   return (
     <Layout top>
       <Title title="Overall Top Players" stageOnly data={data?.game[0]} />
-      <div className="mx-auto mt-16 flex h-[508px] w-max gap-6 px-16">
+      <div className="mx-auto mt-16 flex h-127 w-max gap-6 px-16">
         <div className="grid grid-cols-5 gap-4">
           {team?.map((player, idx) => (
             <PlayerCard
@@ -26,6 +26,6 @@ const Page = () => {
       </div>
     </Layout>
   );
-};
+}
 
-export default Page;
+export default TopPlayersGroup;

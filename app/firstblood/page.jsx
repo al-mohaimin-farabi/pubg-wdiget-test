@@ -3,12 +3,12 @@ import Image from "next/image";
 import React from "react";
 import { MdKeyboardDoubleArrowRight } from "react-icons/md";
 
-const page = () => {
+function Firstblood() {
   return (
     <Layout>
       <div className="absolute top-1/2 left-0 -translate-y-1/2 border-t border-yellow-400 bg-blue-900">
         <div className=""></div>
-        <div className="flex w-full items-center justify-between  text-yellow-400">
+        <div className="flex w-full items-center justify-between text-yellow-400">
           <div className="flex items-center gap-2 p-1">
             <Image
               src="/KS_AXE_2020.png"
@@ -35,6 +35,6 @@ const page = () => {
       </div>
     </Layout>
   );
-};
+}
 
-export default page;
+export default Firstblood;

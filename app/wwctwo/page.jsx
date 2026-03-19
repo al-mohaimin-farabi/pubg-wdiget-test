@@ -5,14 +5,14 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import Layout from "@/components/layout";
 
-const WwcTwo = () => {
+function WwcTwo() {
   const { data } = useGetWwcdTeamStatsQuery();
   const team = data?.data?.[0]?.players || [];
 
   return (
     <Layout>
       <div className="absolute bottom-16 z-10 h-auto w-full px-16">
-        <div className="relative z-10 mx-auto mb-8 flex max-h-[180px] w-max">
+        <div className="relative z-10 mx-auto mb-8 flex max-h-45 w-max">
           <div className="grid aspect-square place-content-center bg-black px-4">
             <Image
               priority
@@ -50,13 +50,13 @@ const WwcTwo = () => {
                 width={600}
                 height={750}
                 alt={player.name}
-                className="h-[750px] w-[600px] scale-x-150"
+                className="h-187.5 w-150 scale-x-150"
               />
             </div>
           ))}
           {/* big title */}
           {/* leading-none */}
-          <p className="text-primary absolute -top-10 left-1/2 -z-20 w-max -translate-x-1/2 text-center text-[220px] leading-[280px] font-extrabold uppercase">
+          <p className="text-primary absolute -top-10 left-1/2 -z-20 w-max -translate-x-1/2 text-center text-[220px] leading-70 font-extrabold uppercase">
             <span className="stroked-text">Winner </span>
             Winner
             <br />
@@ -66,7 +66,7 @@ const WwcTwo = () => {
       </div>
     </Layout>
   );
-};
+}
 
 export default WwcTwo;
 
