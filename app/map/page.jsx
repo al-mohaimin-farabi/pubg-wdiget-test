@@ -67,6 +67,9 @@ const INITIAL_STATE = {
   },
 };
 
+
+// PDF attached for unerstanding
+
 export default function PubgMapSimulator() {
   const [simulatorState, setSimulatorState] = useState(INITIAL_STATE);
   const gameStateRef = useRef(simulatorState);
