@@ -300,7 +300,7 @@ export default function PubgMapSimulator() {
   const currentMapUnits = MAPS[simulatorState.mapType]?.size || 800000;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-neutral-900 font-sans text-white">
+    <div className="flex h-screen overflow-hidden  font-sans text-white">
       {/* LEFT SIDE: Control Panel */}
       <div className="flex w-87.5 shrink-0 flex-col gap-6 overflow-y-auto border-r border-neutral-700 bg-neutral-800 p-6">
         <div>
@@ -412,13 +412,13 @@ export default function PubgMapSimulator() {
       </div>
 
       {/* RIGHT SIDE: Canvas Rendering */}
-      <div className="flex flex-1 items-start justify-end ">
-        <div className="relative overflow-hidden border border-neutral-800  shadow-2xl shadow-black/50">
+      <div className="flex flex-1 items-start justify-end">
+        <div className="relative overflow-hidden border border-neutral-800 shadow-2xl shadow-black/50">
           <canvas
             ref={canvasRef}
             width={CANVAS_SIZE}
             height={CANVAS_SIZE}
-            className="block w-full h-full bg-red-900 "
+            className="block h-full w-full bg-transparent"
           />
         </div>
       </div>
