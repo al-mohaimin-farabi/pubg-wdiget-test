@@ -9,11 +9,13 @@ const CANVAS_SIZE = 1080;
 // Erangel/Miramar = 8x8km, Vikendi = 6x6km, Sanhok = 4x4km
 const MAPS = {
   Erangel: {
+    // FOR PRODUCTION: Change this to src: "/Erangel_Main_High_Res.png" (your public folder)
     src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Erangel_Main_Low_Res.png",
     name: "Erangel",
     size: 800000,
   },
   Miramar: {
+    // FOR PRODUCTION: Change this to src: "/Miramar_Main_High_Res.png"
     src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Miramar_Main_Low_Res.png",
     name: "Miramar",
     size: 800000,
@@ -109,12 +111,12 @@ export default function PubgMapSimulator() {
     const currentMapSize = MAPS[state.mapType]?.size || 800000;
 
     // 2. We need to know how big our HTML Canvas is in pixels.
-    // In our app, CANVAS_SIZE is set to 800 pixels.
+    // In our app, CANVAS_SIZE is set to 1080 pixels.
 
     // 3. We calculate the "Scale Factor" (or Ratio).
     // Formula: Canvas Pixels / Game Units
-    // Example for Erangel: 800 / 800000 = 0.001
-    // This means 1 In-Game Unit equals 0.001 Pixels on our screen.
+    // Example for Erangel: 1080 / 800000 = 0.00135
+    // This means 1 In-Game Unit equals 0.00135 Pixels on our screen.
     const scale = CANVAS_SIZE / currentMapSize;
 
     // 1. CLEAR PREVIOUS FRAME
@@ -138,8 +140,6 @@ export default function PubgMapSimulator() {
 
       // APPLYING THE MATH TO CIRCLES:
       // We multiply the raw game X, Y, and Radius by our Scale Factor.
-      // If BlueZone is at X:400000, Y:400000 (dead center of Erangel)
-      // Math: 400,000 * 0.001 = 400px (dead center of our 800px Canvas)
       const pixelX = zone.x * scale;
       const pixelY = zone.y * scale;
       const pixelRadius = zone.radius * scale;
@@ -198,12 +198,6 @@ export default function PubgMapSimulator() {
       // =====================================================================
       // PINPOINT PLAYER POSITION MATH
       // =====================================================================
-      // To render the player perfectly, we multiply their raw X/Y by the scale.
-      // Example:
-      // Player "waveREAPER7" is at raw location X: 173730
-      // scale for Erangel is 0.001
-      // pixel X (px) = 173730 * 0.001 = 173.73 pixels.
-      // The canvas will draw the center of the player dot at exactly 173.73px!
       const px = player.location.x * scale;
       const py = player.location.y * scale;
 
@@ -258,7 +252,7 @@ export default function PubgMapSimulator() {
     const newMapType = e.target.value;
     const oldMapSize = MAPS[simulatorState.mapType].size;
     const newMapSize = MAPS[newMapType].size;
-    const ratio = newMapSize / oldMapSize; // e.g., 400k / 800k = 0.5
+    const ratio = newMapSize / oldMapSize;
 
     const newState = { ...simulatorState, mapType: newMapType };
 
@@ -300,7 +294,7 @@ export default function PubgMapSimulator() {
   const currentMapUnits = MAPS[simulatorState.mapType]?.size || 800000;
 
   return (
-    <div className="flex h-screen overflow-hidden  font-sans text-white">
+    <div className="flex h-screen overflow-hidden font-sans text-white">
       {/* LEFT SIDE: Control Panel */}
       <div className="flex w-87.5 shrink-0 flex-col gap-6 overflow-y-auto border-r border-neutral-700 bg-neutral-800 p-6">
         <div>
@@ -330,35 +324,144 @@ export default function PubgMapSimulator() {
         </div>
 
         {/* Zone Controls */}
-        <div className="flex flex-col gap-3 rounded-lg bg-neutral-900 p-4">
+        <div className="flex flex-col gap-4 rounded-lg bg-neutral-900 p-4">
           <h3 className="border-b border-neutral-700 pb-2 text-sm font-semibold text-neutral-300">
             Zone Controls
           </h3>
 
-          <div className="text-xs">
-            <label className="text-blue-300">Blue Zone Radius</label>
-            <input
-              type="range"
-              min="0"
-              max={currentMapUnits}
-              step="1000"
-              className="mt-1 w-full accent-blue-500"
-              value={simulatorState.ZoneState.BlueZone.radius}
-              onChange={(e) => updateZone("BlueZone", "radius", e.target.value)}
-            />
+          {/* Blue Zone */}
+          <div className="rounded bg-neutral-800 p-3">
+            <span className="text-xs font-bold text-blue-400">Blue Zone</span>
+            <div className="mt-2">
+              <label className="text-[10px] text-neutral-400">Radius</label>
+              <input
+                type="range"
+                min="0"
+                max={currentMapUnits}
+                step="1000"
+                className="w-full accent-blue-500"
+                value={simulatorState.ZoneState.BlueZone.radius}
+                onChange={(e) =>
+                  updateZone("BlueZone", "radius", e.target.value)
+                }
+              />
+            </div>
+            <div className="mt-1 flex gap-4">
+              <div className="flex-1">
+                <label className="text-[10px] text-neutral-400">X</label>
+                <input
+                  type="range"
+                  min="0"
+                  max={currentMapUnits}
+                  step="1000"
+                  className="w-full accent-blue-500"
+                  value={simulatorState.ZoneState.BlueZone.x}
+                  onChange={(e) => updateZone("BlueZone", "x", e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] text-neutral-400">Y</label>
+                <input
+                  type="range"
+                  min="0"
+                  max={currentMapUnits}
+                  step="1000"
+                  className="w-full accent-blue-500"
+                  value={simulatorState.ZoneState.BlueZone.y}
+                  onChange={(e) => updateZone("BlueZone", "y", e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="text-xs">
-            <label className="text-white">Safe Zone Radius</label>
-            <input
-              type="range"
-              min="0"
-              max={currentMapUnits}
-              step="1000"
-              className="mt-1 w-full accent-white"
-              value={simulatorState.ZoneState.SafeZone.radius}
-              onChange={(e) => updateZone("SafeZone", "radius", e.target.value)}
-            />
+          {/* Safe Zone */}
+          <div className="rounded bg-neutral-800 p-3">
+            <span className="text-xs font-bold text-white">Safe Zone</span>
+            <div className="mt-2">
+              <label className="text-[10px] text-neutral-400">Radius</label>
+              <input
+                type="range"
+                min="0"
+                max={currentMapUnits}
+                step="1000"
+                className="w-full accent-white"
+                value={simulatorState.ZoneState.SafeZone.radius}
+                onChange={(e) =>
+                  updateZone("SafeZone", "radius", e.target.value)
+                }
+              />
+            </div>
+            <div className="mt-1 flex gap-4">
+              <div className="flex-1">
+                <label className="text-[10px] text-neutral-400">X</label>
+                <input
+                  type="range"
+                  min="0"
+                  max={currentMapUnits}
+                  step="1000"
+                  className="w-full accent-white"
+                  value={simulatorState.ZoneState.SafeZone.x}
+                  onChange={(e) => updateZone("SafeZone", "x", e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] text-neutral-400">Y</label>
+                <input
+                  type="range"
+                  min="0"
+                  max={currentMapUnits}
+                  step="1000"
+                  className="w-full accent-white"
+                  value={simulatorState.ZoneState.SafeZone.y}
+                  onChange={(e) => updateZone("SafeZone", "y", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Red Zone */}
+          <div className="rounded bg-neutral-800 p-3">
+            <span className="text-xs font-bold text-red-500">Red Zone</span>
+            <div className="mt-2">
+              <label className="text-[10px] text-neutral-400">Radius</label>
+              <input
+                type="range"
+                min="0"
+                max={currentMapUnits}
+                step="1000"
+                className="w-full accent-red-500"
+                value={simulatorState.ZoneState.RedZone.radius}
+                onChange={(e) =>
+                  updateZone("RedZone", "radius", e.target.value)
+                }
+              />
+            </div>
+            <div className="mt-1 flex gap-4">
+              <div className="flex-1">
+                <label className="text-[10px] text-neutral-400">X</label>
+                <input
+                  type="range"
+                  min="0"
+                  max={currentMapUnits}
+                  step="1000"
+                  className="w-full accent-red-500"
+                  value={simulatorState.ZoneState.RedZone.x}
+                  onChange={(e) => updateZone("RedZone", "x", e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] text-neutral-400">Y</label>
+                <input
+                  type="range"
+                  min="0"
+                  max={currentMapUnits}
+                  step="1000"
+                  className="w-full accent-red-500"
+                  value={simulatorState.ZoneState.RedZone.y}
+                  onChange={(e) => updateZone("RedZone", "y", e.target.value)}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -413,7 +516,7 @@ export default function PubgMapSimulator() {
 
       {/* RIGHT SIDE: Canvas Rendering */}
       <div className="flex flex-1 items-start justify-end">
-        <div className="relative overflow-hidden border border-neutral-800 shadow-2xl shadow-black/50">
+        <div className="relative overflow-hidden">
           <canvas
             ref={canvasRef}
             width={CANVAS_SIZE}
