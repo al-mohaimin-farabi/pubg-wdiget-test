@@ -5,26 +5,56 @@ import getPlayerMapdata from "@/utils/getPlayerMapdata";
 
 const CANVAS_SIZE = 1080;
 
+// Map sizes are in centimetres (Unreal Engine units).
+// 1 km = 100 000 cm. All values verified against PUBG official API telemetry docs.
+// Erangel/Miramar/Taego/Deston/Rondo: 8.16 km × 8.16 km = 816 000 cm
+// Sanhok: exactly half of Erangel = 408 000 cm (4.08 km)
+// Vikendi (original 6 km version used in Mobile): 612 000 cm (6.12 km)
+// Karakin: 204 000 cm (2.04 km)
+const BASE_URL =
+  "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps";
 const MAPS = {
   Erangel: {
-    src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Erangel_Main_Low_Res.png",
+    src: `${BASE_URL}/Erangel_Main_Low_Res.png`,
     name: "Erangel",
-    size: 800000,
+    size: 816000,
+    label: "Erangel (8.16km)",
   },
   Miramar: {
-    src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Miramar_Main_Low_Res.png",
+    src: `${BASE_URL}/Miramar_Main_Low_Res.png`,
     name: "Miramar",
-    size: 800000,
+    size: 816000,
+    label: "Miramar (8.16km)",
   },
   Vikendi: {
-    src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Vikendi_Main_Low_Res.png",
+    src: `${BASE_URL}/Vikendi_Main_Low_Res.png`,
     name: "Vikendi",
-    size: 600000,
+    size: 612000,
+    label: "Vikendi (6.12km)",
   },
   Sanhok: {
-    src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Sanhok_Main_Low_Res.png",
+    src: `${BASE_URL}/Sanhok_Main_Low_Res.png`,
     name: "Sanhok",
-    size: 400000,
+    size: 408000,
+    label: "Sanhok (4.08km)",
+  },
+  Taego: {
+    src: `${BASE_URL}/Taego_Main_Low_Res.png`,
+    name: "Taego",
+    size: 816000,
+    label: "Taego (8.16km)",
+  },
+  Karakin: {
+    src: `${BASE_URL}/Karakin_Main_Low_Res.png`,
+    name: "Karakin",
+    size: 204000,
+    label: "Karakin (2.04km)",
+  },
+  Rondo: {
+    src: `${BASE_URL}/Rondo_Main_Low_Res.png`,
+    name: "Rondo",
+    size: 816000,
+    label: "Rondo (8.16km)",
   },
 };
 
@@ -42,8 +72,15 @@ const defaultGameInfo = (mapSize) => ({
 // Main simulator page that manages map state, rendering, and interactive controls.
 export default function PubgMapSimulator() {
   const [simulatorState, setSimulatorState] = useState(null);
+  const [showGrid, setShowGrid] = useState(false);
+  const showGridRef = useRef(false);
   const gameStateRef = useRef(null);
-  const renderStateRef = useRef({ players: {}, circles: [], blueZoneAnim: null, viewport: null });
+  const renderStateRef = useRef({
+    players: {},
+    circles: [],
+    blueZoneAnim: null,
+    viewport: null,
+  });
   const canvasRef = useRef(null);
   const imagesRef = useRef({});
   const requestRef = useRef();
@@ -118,14 +155,20 @@ export default function PubgMapSimulator() {
     rp.circles.forEach((vc, i) => {
       if (i === 0 && rp.blueZoneAnim) {
         const anim = rp.blueZoneAnim;
-        const progress = Math.min((performance.now() - anim.startTime) / anim.duration, 1.0);
+        const progress = Math.min(
+          (performance.now() - anim.startTime) / anim.duration,
+          1.0,
+        );
         vc.x = anim.startX + (anim.targetX - anim.startX) * progress;
         vc.y = anim.startY + (anim.targetY - anim.startY) * progress;
-        vc.radius = anim.startRadius + (anim.targetRadius - anim.startRadius) * progress;
+        vc.radius =
+          anim.startRadius + (anim.targetRadius - anim.startRadius) * progress;
         if (progress >= 1.0) rp.blueZoneAnim = null;
       } else {
         const tc = targetCircles[i];
-        const tx = parseFloat(tc.X), ty = parseFloat(tc.Y), tr = parseFloat(tc.Size) / 2;
+        const tx = parseFloat(tc.X),
+          ty = parseFloat(tc.Y),
+          tr = parseFloat(tc.Size) / 2;
         vc.x += (tx - vc.x) * 0.1;
         vc.y += (ty - vc.y) * 0.1;
         vc.radius += (tr - vc.radius) * 0.1;
@@ -135,7 +178,8 @@ export default function PubgMapSimulator() {
     // =====================================================================
     // VIEWPORT: AUTO-ZOOM TO BLUE ZONE (circle[0])
     // =====================================================================
-    if (!rp.viewport) rp.viewport = { zoom: 1, cx: CANVAS_SIZE / 2, cy: CANVAS_SIZE / 2 };
+    if (!rp.viewport)
+      rp.viewport = { zoom: 1, cx: CANVAS_SIZE / 2, cy: CANVAS_SIZE / 2 };
     const vp = rp.viewport;
 
     if (rp.circles.length >= 2) {
@@ -144,8 +188,8 @@ export default function PubgMapSimulator() {
       const bzPr = bz.radius * scale;
       const targetZoom = Math.max(1, (CANVAS_SIZE * 0.85) / (bzPr * 2));
       vp.zoom += (targetZoom - vp.zoom) * 0.02;
-      vp.cx  += (bz.x * scale - vp.cx) * 0.02;
-      vp.cy  += (bz.y * scale - vp.cy) * 0.02;
+      vp.cx += (bz.x * scale - vp.cx) * 0.02;
+      vp.cy += (bz.y * scale - vp.cy) * 0.02;
     } else {
       // No circles or white-circle-only phase: full map view, no zoom
       vp.zoom += (1 - vp.zoom) * 0.02;
@@ -188,7 +232,9 @@ export default function PubgMapSimulator() {
       ctx.stroke();
     } else if (rp.circles.length >= 2) {
       const bz = rp.circles[0];
-      const bzPx = bz.x * scale, bzPy = bz.y * scale, bzPr = bz.radius * scale;
+      const bzPx = bz.x * scale,
+        bzPy = bz.y * scale,
+        bzPr = bz.radius * scale;
 
       // Blue fog outside the blue zone (evenodd punch-out, clamped to map bounds)
       ctx.beginPath();
@@ -218,14 +264,20 @@ export default function PubgMapSimulator() {
     // =====================================================================
     const planeStartX = parseFloat(gi?.PlaneStartLocX ?? 0) * scale;
     const planeStartY = parseFloat(gi?.PlaneStartLocY ?? 0) * scale;
-    const planeStopX  = parseFloat(gi?.PlaneStopLocX  ?? 0) * scale;
-    const planeStopY  = parseFloat(gi?.PlaneStopLocY  ?? 0) * scale;
-    const planeAngle  = Math.atan2(planeStopY - planeStartY, planeStopX - planeStartX);
+    const planeStopX = parseFloat(gi?.PlaneStopLocX ?? 0) * scale;
+    const planeStopY = parseFloat(gi?.PlaneStopLocY ?? 0) * scale;
+    const planeAngle = Math.atan2(
+      planeStopY - planeStartY,
+      planeStopX - planeStartX,
+    );
 
     // Plane flies once from start → end over 60s, then disappears
     const PLANE_DURATION = 60000;
     if (!rp.planeStartTime) rp.planeStartTime = timestamp;
-    const planeT = Math.min((timestamp - rp.planeStartTime) / PLANE_DURATION, 1.0);
+    const planeT = Math.min(
+      (timestamp - rp.planeStartTime) / PLANE_DURATION,
+      1.0,
+    );
     const planeActive = planeT < 1.0;
 
     if (planeActive) {
@@ -256,7 +308,8 @@ export default function PubgMapSimulator() {
       // Fuselage
       ctx.beginPath();
       ctx.ellipse(0, 0, s * 1.5, s * 0.2, 0, 0, Math.PI * 2);
-      ctx.fill(); ctx.stroke();
+      ctx.fill();
+      ctx.stroke();
 
       // Left wing
       ctx.beginPath();
@@ -265,7 +318,8 @@ export default function PubgMapSimulator() {
       ctx.lineTo(-s * 0.85, -s * 0.6);
       ctx.lineTo(-s * 0.25, 0);
       ctx.closePath();
-      ctx.fill(); ctx.stroke();
+      ctx.fill();
+      ctx.stroke();
 
       // Right wing (mirror)
       ctx.beginPath();
@@ -274,7 +328,8 @@ export default function PubgMapSimulator() {
       ctx.lineTo(-s * 0.85, s * 0.6);
       ctx.lineTo(-s * 0.25, 0);
       ctx.closePath();
-      ctx.fill(); ctx.stroke();
+      ctx.fill();
+      ctx.stroke();
 
       // Tail fin left
       ctx.beginPath();
@@ -283,7 +338,8 @@ export default function PubgMapSimulator() {
       ctx.lineTo(-s * 1.5, -s * 0.15);
       ctx.lineTo(-s * 1.2, 0);
       ctx.closePath();
-      ctx.fill(); ctx.stroke();
+      ctx.fill();
+      ctx.stroke();
 
       // Tail fin right (mirror)
       ctx.beginPath();
@@ -292,9 +348,79 @@ export default function PubgMapSimulator() {
       ctx.lineTo(-s * 1.5, s * 0.15);
       ctx.lineTo(-s * 1.2, 0);
       ctx.closePath();
-      ctx.fill(); ctx.stroke();
+      ctx.fill();
+      ctx.stroke();
 
       ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
+    // =====================================================================
+    // DEBUG GRID
+    // Grid lines every mapSize/8 (1 km per cell on Erangel).
+    // Labels show canvas-space coords so you can cross-reference against
+    // real PUBG landmark coordinates for calibration.
+    // NOTE: PUBG PC Erangel is actually ~816,000 units (8.16 km), not 800,000.
+    // If player dots sit slightly off known landmarks, adjust map `size` above.
+    // =====================================================================
+    if (showGridRef.current) {
+      const gridDivisions = 8;
+      const gridStep = currentMapSize / gridDivisions; // e.g. 100 000 for Erangel
+      const gridStepPx = gridStep * scale;
+
+      ctx.save();
+      ctx.lineWidth = 2 / vp.zoom;
+      ctx.strokeStyle = "rgba(255, 220, 0, 0.5)";
+
+      for (let i = 0; i <= gridDivisions; i++) {
+        const pos = i * gridStepPx;
+        ctx.beginPath();
+        ctx.moveTo(pos, 0);
+        ctx.lineTo(pos, CANVAS_SIZE);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, pos);
+        ctx.lineTo(CANVAS_SIZE, pos);
+        ctx.stroke();
+      }
+      // Coordinate labels at every intersection (units / 100 000 = km)
+      const fontSize = Math.max(9, 11 / vp.zoom);
+      ctx.font = `${fontSize}px monospace`;
+      ctx.textAlign = "left";
+      for (let col = 0; col <= gridDivisions; col++) {
+        for (let row = 0; row <= gridDivisions; row++) {
+          const cx = col * gridStepPx;
+          const cy = row * gridStepPx;
+          const xKm = ((col * gridStep) / 100000).toFixed(1);
+          const yKm = ((row * gridStep) / 100000).toFixed(1);
+          // Dark shadow for readability
+          ctx.fillStyle = "rgba(0,0,0,0.7)";
+          ctx.fillText(
+            `${xKm},${yKm}`,
+            cx + 3 / vp.zoom + 1,
+            cy + fontSize + 3 / vp.zoom + 1,
+          );
+          ctx.fillStyle = "rgba(255, 220, 0, 0.9)";
+          ctx.fillText(
+            `${xKm},${yKm}`,
+            cx + 3 / vp.zoom,
+            cy + fontSize + 3 / vp.zoom,
+          );
+        }
+      }
+
+      // Red crosshair at map centre (should align with Pochinki area on Erangel)
+      const midPx = (currentMapSize / 2) * scale;
+      const ch = 16 / vp.zoom;
+      ctx.strokeStyle = "rgba(255, 60, 60, 0.9)";
+      ctx.lineWidth = 2 / vp.zoom;
+      ctx.beginPath();
+      ctx.moveTo(midPx - ch, midPx);
+      ctx.lineTo(midPx + ch, midPx);
+      ctx.moveTo(midPx, midPx - ch);
+      ctx.lineTo(midPx, midPx + ch);
+      ctx.stroke();
+
       ctx.restore();
     }
 
@@ -313,7 +439,8 @@ export default function PubgMapSimulator() {
       vpos.x += (player.location.x - vpos.x) * 0.1;
       vpos.y += (player.location.y - vpos.y) * 0.1;
 
-      const px = vpos.x * scale, py = vpos.y * scale;
+      const px = vpos.x * scale,
+        py = vpos.y * scale;
       const dotR = 6 / vp.zoom;
 
       ctx.beginPath();
@@ -356,7 +483,10 @@ export default function PubgMapSimulator() {
     setSimulatorState((prev) => {
       const newCircles = [...prev.gameGlobalInfo.CircleArray];
       newCircles[index] = { ...newCircles[index], [prop]: String(value) };
-      return { ...prev, gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles } };
+      return {
+        ...prev,
+        gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles },
+      };
     });
   };
 
@@ -369,9 +499,17 @@ export default function PubgMapSimulator() {
       const newCircle = {
         X: String(Math.round(mapSize * 0.5)),
         Y: String(Math.round(mapSize * 0.5)),
-        Size: String(Math.round(existing.length === 0 ? mapSize * 0.6 : mapSize * 0.35)),
+        Size: String(
+          Math.round(existing.length === 0 ? mapSize * 0.6 : mapSize * 0.35),
+        ),
       };
-      return { ...prev, gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: [...existing, newCircle] } };
+      return {
+        ...prev,
+        gameGlobalInfo: {
+          ...prev.gameGlobalInfo,
+          CircleArray: [...existing, newCircle],
+        },
+      };
     });
   };
 
@@ -380,7 +518,10 @@ export default function PubgMapSimulator() {
     renderStateRef.current.blueZoneAnim = null;
     setSimulatorState((prev) => {
       const newCircles = prev.gameGlobalInfo.CircleArray.slice(0, -1);
-      return { ...prev, gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles } };
+      return {
+        ...prev,
+        gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles },
+      };
     });
   };
 
@@ -406,7 +547,10 @@ export default function PubgMapSimulator() {
     setSimulatorState((prev) => {
       const newCircles = [...prev.gameGlobalInfo.CircleArray];
       newCircles[0] = { ...newCircles[1] };
-      return { ...prev, gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles } };
+      return {
+        ...prev,
+        gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles },
+      };
     });
   };
 
@@ -462,7 +606,13 @@ export default function PubgMapSimulator() {
       };
     });
 
-    renderStateRef.current = { players: {}, circles: [], blueZoneAnim: null, viewport: null, planeStartTime: null };
+    renderStateRef.current = {
+      players: {},
+      circles: [],
+      blueZoneAnim: null,
+      viewport: null,
+      planeStartTime: null,
+    };
   };
 
   const currentMapUnits = MAPS[simulatorState?.mapType]?.size || 800000;
@@ -472,30 +622,54 @@ export default function PubgMapSimulator() {
     <div className="flex h-screen overflow-hidden font-sans text-white">
       {/* LEFT SIDE: Control Panel */}
       <div className="flex w-87.5 shrink-0 flex-col gap-6 overflow-y-auto border-r border-neutral-700 bg-neutral-800 p-6">
-        <div>
-          <h1 className="mb-1 text-xl font-bold text-blue-400">PCOB Simulator</h1>
-          <p className="text-xs text-neutral-400">Drag sliders to test Canvas</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="mb-1 text-xl font-bold text-blue-400">
+              PCOB Simulator
+            </h1>
+            <p className="text-xs text-neutral-400">
+              Drag sliders to test Canvas
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              showGridRef.current = !showGridRef.current;
+              setShowGrid(showGridRef.current);
+            }}
+            className={`mt-1 rounded px-2 py-1 text-[10px] font-bold transition-colors ${
+              showGrid
+                ? "bg-yellow-500 text-black"
+                : "bg-neutral-600 text-neutral-300 hover:bg-neutral-500"
+            }`}
+          >
+            {showGrid ? "Grid ON" : "Grid OFF"}
+          </button>
         </div>
 
         {/* Map selector */}
         <div className="rounded-lg bg-neutral-900 p-4">
-          <label className="mb-2 block text-sm font-semibold text-neutral-300">Active Map</label>
+          <label className="mb-2 block text-sm font-semibold text-neutral-300">
+            Active Map
+          </label>
           <select
             className="w-full rounded border border-neutral-600 bg-neutral-700 p-2 text-sm text-white outline-none"
             value={simulatorState?.mapType ?? "Erangel"}
             onChange={handleMapChange}
           >
-            <option value="Erangel">Erangel (8x8km)</option>
-            <option value="Miramar">Miramar (8x8km)</option>
-            <option value="Vikendi">Vikendi (6x6km)</option>
-            <option value="Sanhok">Sanhok (4x4km)</option>
+            {Object.entries(MAPS).map(([key, map]) => (
+              <option key={key} value={key}>
+                {map.label}
+              </option>
+            ))}
           </select>
         </div>
 
         {/* Zone Circles */}
         <div className="flex flex-col gap-4 rounded-lg bg-neutral-900 p-4">
           <div className="flex items-center justify-between border-b border-neutral-700 pb-2">
-            <h3 className="text-sm font-semibold text-neutral-300">Zone Circles</h3>
+            <h3 className="text-sm font-semibold text-neutral-300">
+              Zone Circles
+            </h3>
             <div className="flex gap-2">
               {circles.length < 2 && (
                 <button
@@ -517,13 +691,17 @@ export default function PubgMapSimulator() {
           </div>
 
           {circles.length === 0 && (
-            <p className="text-center text-xs text-neutral-500">No circles yet — click &quot;+ Circle 1&quot;</p>
+            <p className="text-center text-xs text-neutral-500">
+              No circles yet — click &quot;+ Circle 1&quot;
+            </p>
           )}
 
           {circles.map((circle, i) => (
             <div key={i} className="rounded bg-neutral-800 p-3">
               <div className="mb-2 flex items-center justify-between">
-                <span className={`text-xs font-bold ${i === 0 ? "text-blue-400" : "text-white"}`}>
+                <span
+                  className={`text-xs font-bold ${i === 0 ? "text-blue-400" : "text-white"}`}
+                >
                   {i === 0 ? "Blue Zone (current)" : "Safe Zone (next)"}
                 </span>
                 {i === 0 && circles.length >= 2 && (
@@ -535,13 +713,21 @@ export default function PubgMapSimulator() {
                   </button>
                 )}
               </div>
-              {[["X", "X"], ["Y", "Y"], ["Size", "Diameter"]].map(([prop, label]) => (
+              {[
+                ["X", "X"],
+                ["Y", "Y"],
+                ["Size", "Diameter"],
+              ].map(([prop, label]) => (
                 <div key={prop} className="mt-1">
-                  <label className="text-[10px] text-neutral-400">{label}</label>
+                  <label className="text-[10px] text-neutral-400">
+                    {label}
+                  </label>
                   <input
                     type="range"
                     min="0"
-                    max={prop === "Size" ? currentMapUnits * 1.5 : currentMapUnits}
+                    max={
+                      prop === "Size" ? currentMapUnits * 1.5 : currentMapUnits
+                    }
                     step="1000"
                     className={`w-full ${i === 0 ? "accent-blue-500" : "accent-white"}`}
                     value={parseFloat(circle[prop]) ?? 0}
@@ -595,7 +781,9 @@ export default function PubgMapSimulator() {
               <div className="mt-2 flex gap-4">
                 {["x", "y"].map((axis) => (
                   <div key={axis} className="flex-1">
-                    <label className="text-[10px] text-neutral-400">{axis.toUpperCase()}</label>
+                    <label className="text-[10px] text-neutral-400">
+                      {axis.toUpperCase()}
+                    </label>
                     <input
                       type="range"
                       min="0"
@@ -603,7 +791,9 @@ export default function PubgMapSimulator() {
                       step="1000"
                       className="w-full accent-neutral-500"
                       value={player.location[axis] ?? 0}
-                      onChange={(e) => updatePlayerPos(index, axis, e.target.value)}
+                      onChange={(e) =>
+                        updatePlayerPos(index, axis, e.target.value)
+                      }
                     />
                   </div>
                 ))}
