@@ -28,6 +28,7 @@ const MAPS = {
   },
 };
 
+// Builds default plane path and empty circle state for a selected map size.
 const defaultGameInfo = (mapSize) => ({
   CircleArray: [],
   PlaneStartLocX: String(Math.round(mapSize * 0.2)),
@@ -38,6 +39,7 @@ const defaultGameInfo = (mapSize) => ({
 
 // PDF attached for unerstanding
 
+// Main simulator page that manages map state, rendering, and interactive controls.
 export default function PubgMapSimulator() {
   const [simulatorState, setSimulatorState] = useState(null);
   const gameStateRef = useRef(null);
@@ -46,7 +48,9 @@ export default function PubgMapSimulator() {
   const imagesRef = useRef({});
   const requestRef = useRef();
 
+  // Loads initial player data once and seeds simulator state.
   useEffect(() => {
+    // Applies fetched player list and resets rendered player cache.
     getPlayerMapdata().then((data) => {
       if (data) {
         setSimulatorState({
@@ -59,10 +63,12 @@ export default function PubgMapSimulator() {
     });
   }, []);
 
+  // Keeps an always-fresh state snapshot for the animation loop.
   useEffect(() => {
     gameStateRef.current = simulatorState;
   }, [simulatorState]);
 
+  // Preloads all map images once to avoid draw-time fetch delays.
   useEffect(() => {
     Object.keys(MAPS).forEach((key) => {
       const img = new Image();
@@ -75,6 +81,7 @@ export default function PubgMapSimulator() {
   // =========================================================================
   // CANVAS RENDERING ENGINE
   // =========================================================================
+  // Renders every animation frame: map, zones, flight path, players, and overlays.
   const renderLoop = (timestamp) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -107,6 +114,7 @@ export default function PubgMapSimulator() {
     }
     rp.circles.length = targetCircles.length;
 
+    // Smoothly animates visible circles toward the latest telemetry targets.
     rp.circles.forEach((vc, i) => {
       if (i === 0 && rp.blueZoneAnim) {
         const anim = rp.blueZoneAnim;
@@ -293,6 +301,7 @@ export default function PubgMapSimulator() {
     // =====================================================================
     // PLAYERS (asymptotic lerp)
     // =====================================================================
+    // Draws alive/active players and lerps movement for smoother motion.
     state.TotalPlayerList?.forEach((player) => {
       if (![0, 2, 3, 4, 6].includes(player.liveState)) return;
 
@@ -332,6 +341,7 @@ export default function PubgMapSimulator() {
     requestRef.current = requestAnimationFrame(renderLoop);
   };
 
+  // Starts the requestAnimationFrame loop on mount and cancels it on unmount.
   useEffect(() => {
     requestRef.current = requestAnimationFrame(renderLoop);
     return () => cancelAnimationFrame(requestRef.current);
@@ -340,6 +350,7 @@ export default function PubgMapSimulator() {
   // =========================================================================
   // SIMULATOR CONTROLS
   // =========================================================================
+  // Updates a single circle property in simulator state.
   const updateCircle = (index, prop, value) => {
     renderStateRef.current.blueZoneAnim = null;
     setSimulatorState((prev) => {
@@ -349,6 +360,7 @@ export default function PubgMapSimulator() {
     });
   };
 
+  // Adds the next zone circle with map-scaled defaults (max 2 circles).
   const addCircle = () => {
     setSimulatorState((prev) => {
       const mapSize = MAPS[prev.mapType].size;
@@ -363,6 +375,7 @@ export default function PubgMapSimulator() {
     });
   };
 
+  // Removes the most recently added circle and clears blue-zone animation.
   const removeLastCircle = () => {
     renderStateRef.current.blueZoneAnim = null;
     setSimulatorState((prev) => {
@@ -371,6 +384,7 @@ export default function PubgMapSimulator() {
     });
   };
 
+  // Triggers a timed blue-zone shrink animation toward the safe zone.
   const triggerBlueZoneShrink = () => {
     const state = gameStateRef.current;
     const rp = renderStateRef.current;
@@ -396,6 +410,7 @@ export default function PubgMapSimulator() {
     });
   };
 
+  // Updates one flight path endpoint value in gameGlobalInfo.
   const updatePlane = (prop, value) => {
     setSimulatorState((prev) => ({
       ...prev,
@@ -403,6 +418,7 @@ export default function PubgMapSimulator() {
     }));
   };
 
+  // Updates a specific player's X or Y coordinate from slider input.
   const updatePlayerPos = (index, axis, value) => {
     setSimulatorState((prev) => {
       const newPlayers = [...prev.TotalPlayerList];
@@ -414,6 +430,7 @@ export default function PubgMapSimulator() {
     });
   };
 
+  // Rescales players/zones when switching maps and resets render caches.
   const handleMapChange = (e) => {
     if (!simulatorState) return;
     const newMapType = e.target.value;
