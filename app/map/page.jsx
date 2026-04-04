@@ -71,7 +71,11 @@ const defaultGameInfo = (mapSize) => ({
 
 // Main simulator page that manages map state, rendering, and interactive controls.
 export default function PubgMapSimulator() {
-  const [simulatorState, setSimulatorState] = useState(null);
+  const [simulatorState, setSimulatorState] = useState({
+    mapType: "Erangel",
+    TotalPlayerList: [],
+    gameGlobalInfo: defaultGameInfo(MAPS.Erangel.size),
+  });
   const [showGrid, setShowGrid] = useState(false);
   const showGridRef = useRef(false);
   const gameStateRef = useRef(null);
@@ -85,19 +89,52 @@ export default function PubgMapSimulator() {
   const imagesRef = useRef({});
   const requestRef = useRef();
 
-  // Loads initial player data once and seeds simulator state.
+  // Polls player data with a 100ms target, scheduling the next request after each fetch resolves.
   useEffect(() => {
-    // Applies fetched player list and resets rendered player cache.
-    getPlayerMapdata().then((data) => {
-      if (data) {
-        setSimulatorState({
-          mapType: "Erangel",
-          TotalPlayerList: data,
-          gameGlobalInfo: defaultGameInfo(800000),
+    let isMounted = true;
+    let pollTimeout;
+    const POLL_INTERVAL_MS = 100;
+
+    // Schedules the next fetch while preserving a minimum 100ms poll cycle.
+    const scheduleNextPoll = (startedAt) => {
+      const elapsedMs = Date.now() - startedAt;
+      const delayMs = Math.max(0, POLL_INTERVAL_MS - elapsedMs);
+      pollTimeout = setTimeout(syncPlayers, delayMs);
+    };
+
+    // Pulls latest player positions and keeps existing simulator settings intact.
+    const syncPlayers = async () => {
+      const startedAt = Date.now();
+      try {
+        const data = await getPlayerMapdata();
+        if (!isMounted || !Array.isArray(data)) return;
+
+        setSimulatorState((prev) => {
+          if (!prev) {
+            return {
+              mapType: "Erangel",
+              TotalPlayerList: data,
+              gameGlobalInfo: defaultGameInfo(MAPS.Erangel.size),
+            };
+          }
+          return {
+            ...prev,
+            TotalPlayerList: data,
+          };
         });
+
         renderStateRef.current.players = {};
+      } finally {
+        if (isMounted) scheduleNextPoll(startedAt);
       }
-    });
+    };
+
+    syncPlayers();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(pollTimeout);
+    };
   }, []);
 
   // Keeps an always-fresh state snapshot for the animation loop.
