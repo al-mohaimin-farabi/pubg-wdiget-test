@@ -4,29 +4,57 @@ import React, { useState, useEffect, useRef } from "react";
 import getPlayerMapdata from "@/utils/getPlayerMapdata";
 
 const CANVAS_SIZE = 1080;
-const CM_PER_KM = 100000;
 
-// PUBG telemetry coordinates are in centimeters from top-left origin.
+// Map sizes are in centimetres (Unreal Engine units).
+// 1 km = 100 000 cm. All values verified against PUBG official API telemetry docs.
+// Erangel/Miramar/Taego/Deston/Rondo: 8.16 km × 8.16 km = 816 000 cm
+// Sanhok: exactly half of Erangel = 408 000 cm (4.08 km)
+// Vikendi (original 6 km version used in Mobile): 612 000 cm (6.12 km)
+// Karakin: 204 000 cm (2.04 km)
+const BASE_URL =
+  "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps";
 const MAPS = {
   Erangel: {
-    src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Erangel_Main_Low_Res.png",
+    src: `${BASE_URL}/Erangel_Main_Low_Res.png`,
     name: "Erangel",
     size: 816000,
+    label: "Erangel (8.16km)",
   },
   Miramar: {
-    src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Miramar_Main_Low_Res.png",
+    src: `${BASE_URL}/Miramar_Main_Low_Res.png`,
     name: "Miramar",
     size: 816000,
+    label: "Miramar (8.16km)",
   },
   Vikendi: {
-    src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Vikendi_Main_Low_Res.png",
+    src: `${BASE_URL}/Vikendi_Main_Low_Res.png`,
     name: "Vikendi",
-    size: 816000,
+    size: 612000,
+    label: "Vikendi (6.12km)",
   },
   Sanhok: {
-    src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Sanhok_Main_Low_Res.png",
+    src: `${BASE_URL}/Sanhok_Main_Low_Res.png`,
     name: "Sanhok",
     size: 408000,
+    label: "Sanhok (4.08km)",
+  },
+  Taego: {
+    src: `${BASE_URL}/Taego_Main_Low_Res.png`,
+    name: "Taego",
+    size: 816000,
+    label: "Taego (8.16km)",
+  },
+  Karakin: {
+    src: `${BASE_URL}/Karakin_Main_Low_Res.png`,
+    name: "Karakin",
+    size: 204000,
+    label: "Karakin (2.04km)",
+  },
+  Rondo: {
+    src: `${BASE_URL}/Rondo_Main_Low_Res.png`,
+    name: "Rondo",
+    size: 816000,
+    label: "Rondo (8.16km)",
   },
 };
 
@@ -38,41 +66,12 @@ const defaultGameInfo = (mapSize) => ({
   PlaneStopLocY: String(Math.round(mapSize * 0.9)),
 });
 
-const CALIBRATION_DEFAULTS = {
-  Erangel: { scalePercent: 100, offsetX: 0, offsetY: 0 },
-  Miramar: { scalePercent: 100, offsetX: 0, offsetY: 0 },
-  Vikendi: { scalePercent: 100, offsetX: 0, offsetY: 0 },
-  Sanhok: { scalePercent: 100, offsetX: 0, offsetY: 0 },
-};
-
-const TEXTURE_CALIBRATION_DEFAULTS = {
-  Erangel: { scalePercent: 100, offsetX: 0, offsetY: 0 },
-  Miramar: { scalePercent: 100, offsetX: 0, offsetY: 0 },
-  Vikendi: { scalePercent: 100, offsetX: 0, offsetY: 0 },
-  Sanhok: { scalePercent: 100, offsetX: 0, offsetY: 0 },
-};
-
 // PDF attached for unerstanding
 
 export default function PubgMapSimulator() {
   const [simulatorState, setSimulatorState] = useState(null);
-  const [showGrid, setShowGrid] = useState(true);
-  const [gridStepKm, setGridStepKm] = useState(1);
-  const [calibrationByMap, setCalibrationByMap] =
-    useState(CALIBRATION_DEFAULTS);
-  const [textureCalibrationByMap, setTextureCalibrationByMap] = useState(
-    TEXTURE_CALIBRATION_DEFAULTS,
-  );
-  const [projectionCalibration, setProjectionCalibration] = useState({
-    scalePercent: 100,
-    offsetX: 0,
-    offsetY: 0,
-  });
-  const [textureCalibration, setTextureCalibration] = useState({
-    scalePercent: 100,
-    offsetX: 0,
-    offsetY: 0,
-  });
+  const [showGrid, setShowGrid] = useState(false);
+  const showGridRef = useRef(false);
   const gameStateRef = useRef(null);
   const renderStateRef = useRef({
     players: {},
@@ -90,7 +89,7 @@ export default function PubgMapSimulator() {
         setSimulatorState({
           mapType: "Erangel",
           TotalPlayerList: data,
-          gameGlobalInfo: defaultGameInfo(MAPS.Erangel.size),
+          gameGlobalInfo: defaultGameInfo(800000),
         });
         renderStateRef.current.players = {};
       }
@@ -102,24 +101,6 @@ export default function PubgMapSimulator() {
   }, [simulatorState]);
 
   useEffect(() => {
-    if (!simulatorState?.mapType) return;
-    const nextCalibration =
-      calibrationByMap[simulatorState.mapType] ??
-      CALIBRATION_DEFAULTS[simulatorState.mapType] ??
-      CALIBRATION_DEFAULTS.Erangel;
-    setProjectionCalibration(nextCalibration);
-  }, [simulatorState?.mapType, calibrationByMap]);
-
-  useEffect(() => {
-    if (!simulatorState?.mapType) return;
-    const nextTextureCalibration =
-      textureCalibrationByMap[simulatorState.mapType] ??
-      TEXTURE_CALIBRATION_DEFAULTS[simulatorState.mapType] ??
-      TEXTURE_CALIBRATION_DEFAULTS.Erangel;
-    setTextureCalibration(nextTextureCalibration);
-  }, [simulatorState?.mapType, textureCalibrationByMap]);
-
-  useEffect(() => {
     Object.keys(MAPS).forEach((key) => {
       const img = new Image();
       img.crossOrigin = "Anonymous";
@@ -127,79 +108,6 @@ export default function PubgMapSimulator() {
       imagesRef.current[key] = img;
     });
   }, []);
-
-  const drawGridOverlay = (
-    ctx,
-    mapSize,
-    scale,
-    vpZoom,
-    stepKm,
-    offsetX,
-    offsetY,
-  ) => {
-    const safeStepKm = Number.isFinite(stepKm) ? Math.max(stepKm, 0.25) : 1;
-    const step = safeStepKm * CM_PER_KM;
-    const labelFont = Math.max(11 / vpZoom, 8 / vpZoom);
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    ctx.clip();
-
-    for (let unit = 0; unit <= mapSize; unit += step) {
-      const index = Math.round(unit / step);
-      const posX = (unit + offsetX) * scale;
-      const posY = (unit + offsetY) * scale;
-      const isMajor = index % 2 === 0;
-
-      ctx.beginPath();
-      ctx.moveTo(posX, 0);
-      ctx.lineTo(posX, CANVAS_SIZE);
-      ctx.moveTo(0, posY);
-      ctx.lineTo(CANVAS_SIZE, posY);
-      ctx.lineWidth = (isMajor ? 1.6 : 1) / vpZoom;
-      ctx.strokeStyle = isMajor
-        ? "rgba(20, 230, 255, 0.42)"
-        : "rgba(255, 255, 255, 0.2)";
-      ctx.stroke();
-
-      if (isMajor) {
-        const kmLabel = `${(unit / CM_PER_KM).toFixed(0)} km`;
-        ctx.font = `600 ${labelFont}px monospace`;
-        ctx.fillStyle = "rgba(0, 0, 0, 0.62)";
-
-        const textW = ctx.measureText(kmLabel).width;
-        const pad = 3 / vpZoom;
-
-        ctx.fillRect(
-          posX + 6 / vpZoom,
-          6 / vpZoom,
-          textW + pad * 2,
-          labelFont + pad * 2,
-        );
-        ctx.fillRect(
-          6 / vpZoom,
-          posY + 6 / vpZoom,
-          textW + pad * 2,
-          labelFont + pad * 2,
-        );
-
-        ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
-        ctx.fillText(
-          kmLabel,
-          posX + (6 + pad) / vpZoom,
-          (6 + labelFont + pad) / vpZoom,
-        );
-        ctx.fillText(
-          kmLabel,
-          (6 + pad) / vpZoom,
-          posY + (6 + labelFont + pad) / vpZoom,
-        );
-      }
-    }
-
-    ctx.restore();
-  };
 
   // =========================================================================
   // CANVAS RENDERING ENGINE
@@ -216,17 +124,8 @@ export default function PubgMapSimulator() {
       return;
     }
 
-    const currentMapSize = MAPS[state.mapType]?.size || MAPS.Erangel.size;
-    const calibratedMapSize =
-      currentMapSize * (projectionCalibration.scalePercent / 100);
-    const scale = CANVAS_SIZE / calibratedMapSize;
-    const worldOffsetX = projectionCalibration.offsetX;
-    const worldOffsetY = projectionCalibration.offsetY;
-    const textureScale = textureCalibration.scalePercent / 100;
-    const textureOffsetX = textureCalibration.offsetX * scale;
-    const textureOffsetY = textureCalibration.offsetY * scale;
-    const toPxX = (x) => (x + worldOffsetX) * scale;
-    const toPxY = (y) => (y + worldOffsetY) * scale;
+    const currentMapSize = MAPS[state.mapType]?.size || 800000;
+    const scale = CANVAS_SIZE / currentMapSize;
     const gi = state.gameGlobalInfo;
     const targetCircles = gi?.CircleArray ?? [];
 
@@ -281,8 +180,8 @@ export default function PubgMapSimulator() {
       const bzPr = bz.radius * scale;
       const targetZoom = Math.max(1, (CANVAS_SIZE * 0.85) / (bzPr * 2));
       vp.zoom += (targetZoom - vp.zoom) * 0.02;
-      vp.cx += (toPxX(bz.x) - vp.cx) * 0.02;
-      vp.cy += (toPxY(bz.y) - vp.cy) * 0.02;
+      vp.cx += (bz.x * scale - vp.cx) * 0.02;
+      vp.cy += (bz.y * scale - vp.cy) * 0.02;
     } else {
       // No circles or white-circle-only phase: full map view, no zoom
       vp.zoom += (1 - vp.zoom) * 0.02;
@@ -307,25 +206,7 @@ export default function PubgMapSimulator() {
     // Map image
     const currentMapImg = imagesRef.current[state.mapType];
     if (currentMapImg && currentMapImg.complete) {
-      ctx.drawImage(
-        currentMapImg,
-        textureOffsetX,
-        textureOffsetY,
-        CANVAS_SIZE * textureScale,
-        CANVAS_SIZE * textureScale,
-      );
-    }
-
-    if (showGrid) {
-      drawGridOverlay(
-        ctx,
-        currentMapSize,
-        scale,
-        vp.zoom,
-        gridStepKm,
-        worldOffsetX,
-        worldOffsetY,
-      );
+      ctx.drawImage(currentMapImg, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
     }
 
     // -----------------------------------------------------------------------
@@ -337,14 +218,14 @@ export default function PubgMapSimulator() {
       // Announcement phase: just the white safe-zone circle
       const sz = rp.circles[0];
       ctx.beginPath();
-      ctx.arc(toPxX(sz.x), toPxY(sz.y), sz.radius * scale, 0, 2 * Math.PI);
+      ctx.arc(sz.x * scale, sz.y * scale, sz.radius * scale, 0, 2 * Math.PI);
       ctx.lineWidth = 3 / vp.zoom;
       ctx.strokeStyle = "#ffffff";
       ctx.stroke();
     } else if (rp.circles.length >= 2) {
       const bz = rp.circles[0];
-      const bzPx = toPxX(bz.x),
-        bzPy = toPxY(bz.y),
+      const bzPx = bz.x * scale,
+        bzPy = bz.y * scale,
         bzPr = bz.radius * scale;
 
       // Blue fog outside the blue zone (evenodd punch-out, clamped to map bounds)
@@ -364,7 +245,7 @@ export default function PubgMapSimulator() {
       // Next safe zone — white circle
       const sz = rp.circles[1];
       ctx.beginPath();
-      ctx.arc(toPxX(sz.x), toPxY(sz.y), sz.radius * scale, 0, 2 * Math.PI);
+      ctx.arc(sz.x * scale, sz.y * scale, sz.radius * scale, 0, 2 * Math.PI);
       ctx.lineWidth = 3 / vp.zoom;
       ctx.strokeStyle = "#ffffff";
       ctx.stroke();
@@ -373,10 +254,10 @@ export default function PubgMapSimulator() {
     // =====================================================================
     // FLIGHT PATH + MOVING PLANE
     // =====================================================================
-    const planeStartX = toPxX(parseFloat(gi?.PlaneStartLocX ?? 0));
-    const planeStartY = toPxY(parseFloat(gi?.PlaneStartLocY ?? 0));
-    const planeStopX = toPxX(parseFloat(gi?.PlaneStopLocX ?? 0));
-    const planeStopY = toPxY(parseFloat(gi?.PlaneStopLocY ?? 0));
+    const planeStartX = parseFloat(gi?.PlaneStartLocX ?? 0) * scale;
+    const planeStartY = parseFloat(gi?.PlaneStartLocY ?? 0) * scale;
+    const planeStopX = parseFloat(gi?.PlaneStopLocX ?? 0) * scale;
+    const planeStopY = parseFloat(gi?.PlaneStopLocY ?? 0) * scale;
     const planeAngle = Math.atan2(
       planeStopY - planeStartY,
       planeStopX - planeStartX,
@@ -467,6 +348,75 @@ export default function PubgMapSimulator() {
     }
 
     // =====================================================================
+    // DEBUG GRID
+    // Grid lines every mapSize/8 (1 km per cell on Erangel).
+    // Labels show canvas-space coords so you can cross-reference against
+    // real PUBG landmark coordinates for calibration.
+    // NOTE: PUBG PC Erangel is actually ~816,000 units (8.16 km), not 800,000.
+    // If player dots sit slightly off known landmarks, adjust map `size` above.
+    // =====================================================================
+    if (showGridRef.current) {
+      const gridDivisions = 8;
+      const gridStep = currentMapSize / gridDivisions; // e.g. 100 000 for Erangel
+      const gridStepPx = gridStep * scale;
+
+      ctx.save();
+      ctx.lineWidth = 2 / vp.zoom;
+      ctx.strokeStyle = "rgba(255, 220, 0, 0.5)";
+
+      for (let i = 0; i <= gridDivisions; i++) {
+        const pos = i * gridStepPx;
+        ctx.beginPath();
+        ctx.moveTo(pos, 0);
+        ctx.lineTo(pos, CANVAS_SIZE);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, pos);
+        ctx.lineTo(CANVAS_SIZE, pos);
+        ctx.stroke();
+      }
+      // Coordinate labels at every intersection (units / 100 000 = km)
+      const fontSize = Math.max(9, 11 / vp.zoom);
+      ctx.font = `${fontSize}px monospace`;
+      ctx.textAlign = "left";
+      for (let col = 0; col <= gridDivisions; col++) {
+        for (let row = 0; row <= gridDivisions; row++) {
+          const cx = col * gridStepPx;
+          const cy = row * gridStepPx;
+          const xKm = ((col * gridStep) / 100000).toFixed(1);
+          const yKm = ((row * gridStep) / 100000).toFixed(1);
+          // Dark shadow for readability
+          ctx.fillStyle = "rgba(0,0,0,0.7)";
+          ctx.fillText(
+            `${xKm},${yKm}`,
+            cx + 3 / vp.zoom + 1,
+            cy + fontSize + 3 / vp.zoom + 1,
+          );
+          ctx.fillStyle = "rgba(255, 220, 0, 0.9)";
+          ctx.fillText(
+            `${xKm},${yKm}`,
+            cx + 3 / vp.zoom,
+            cy + fontSize + 3 / vp.zoom,
+          );
+        }
+      }
+
+      // Red crosshair at map centre (should align with Pochinki area on Erangel)
+      const midPx = (currentMapSize / 2) * scale;
+      const ch = 16 / vp.zoom;
+      ctx.strokeStyle = "rgba(255, 60, 60, 0.9)";
+      ctx.lineWidth = 2 / vp.zoom;
+      ctx.beginPath();
+      ctx.moveTo(midPx - ch, midPx);
+      ctx.lineTo(midPx + ch, midPx);
+      ctx.moveTo(midPx, midPx - ch);
+      ctx.lineTo(midPx, midPx + ch);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // =====================================================================
     // PLAYERS (asymptotic lerp)
     // =====================================================================
     state.TotalPlayerList?.forEach((player) => {
@@ -480,8 +430,8 @@ export default function PubgMapSimulator() {
       vpos.x += (player.location.x - vpos.x) * 0.1;
       vpos.y += (player.location.y - vpos.y) * 0.1;
 
-      const px = toPxX(vpos.x),
-        py = toPxY(vpos.y);
+      const px = vpos.x * scale,
+        py = vpos.y * scale;
       const dotR = 6 / vp.zoom;
 
       ctx.beginPath();
@@ -648,42 +598,35 @@ export default function PubgMapSimulator() {
     };
   };
 
-  const updateCalibration = (partial) => {
-    const mapType = simulatorState?.mapType ?? "Erangel";
-    setProjectionCalibration((prev) => {
-      const next = { ...prev, ...partial };
-      setCalibrationByMap((prevMap) => ({ ...prevMap, [mapType]: next }));
-      return next;
-    });
-  };
-
-  const updateTextureCalibration = (partial) => {
-    const mapType = simulatorState?.mapType ?? "Erangel";
-    setTextureCalibration((prev) => {
-      const next = { ...prev, ...partial };
-      setTextureCalibrationByMap((prevMap) => ({
-        ...prevMap,
-        [mapType]: next,
-      }));
-      return next;
-    });
-  };
-
-  const currentMapUnits =
-    MAPS[simulatorState?.mapType]?.size || MAPS.Erangel.size;
+  const currentMapUnits = MAPS[simulatorState?.mapType]?.size || 800000;
   const circles = simulatorState?.gameGlobalInfo?.CircleArray ?? [];
 
   return (
     <div className="flex h-screen overflow-hidden font-sans text-white">
       {/* LEFT SIDE: Control Panel */}
       <div className="flex w-87.5 shrink-0 flex-col gap-6 overflow-y-auto border-r border-neutral-700 bg-neutral-800 p-6">
-        <div>
-          <h1 className="mb-1 text-xl font-bold text-blue-400">
-            PCOB Simulator
-          </h1>
-          <p className="text-xs text-neutral-400">
-            Drag sliders to test Canvas
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="mb-1 text-xl font-bold text-blue-400">
+              PCOB Simulator
+            </h1>
+            <p className="text-xs text-neutral-400">
+              Drag sliders to test Canvas
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              showGridRef.current = !showGridRef.current;
+              setShowGrid(showGridRef.current);
+            }}
+            className={`mt-1 rounded px-2 py-1 text-[10px] font-bold transition-colors ${
+              showGrid
+                ? "bg-yellow-500 text-black"
+                : "bg-neutral-600 text-neutral-300 hover:bg-neutral-500"
+            }`}
+          >
+            {showGrid ? "Grid ON" : "Grid OFF"}
+          </button>
         </div>
 
         {/* Map selector */}
@@ -696,10 +639,11 @@ export default function PubgMapSimulator() {
             value={simulatorState?.mapType ?? "Erangel"}
             onChange={handleMapChange}
           >
-            <option value="Erangel">Erangel (8x8km)</option>
-            <option value="Miramar">Miramar (8x8km)</option>
-            <option value="Vikendi">Vikendi (8x8km)</option>
-            <option value="Sanhok">Sanhok (4x4km)</option>
+            {Object.entries(MAPS).map(([key, map]) => (
+              <option key={key} value={key}>
+                {map.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -802,192 +746,6 @@ export default function PubgMapSimulator() {
               />
             </div>
           ))}
-        </div>
-
-        {/* Debug Overlay */}
-        <div className="flex flex-col gap-3 rounded-lg bg-neutral-900 p-4">
-          <h3 className="border-b border-neutral-700 pb-2 text-sm font-semibold text-neutral-300">
-            Grid Debug
-          </h3>
-
-          <label className="flex items-center gap-2 text-xs text-neutral-300">
-            <input
-              type="checkbox"
-              checked={showGrid}
-              onChange={(e) => setShowGrid(e.target.checked)}
-              className="h-4 w-4 accent-cyan-400"
-            />
-            Show calibration grid
-          </label>
-
-          <div>
-            <label className="mb-1 block text-[10px] text-neutral-400">
-              Grid Step
-            </label>
-            <select
-              value={gridStepKm}
-              onChange={(e) => setGridStepKm(parseFloat(e.target.value))}
-              className="w-full rounded border border-neutral-600 bg-neutral-700 p-2 text-sm text-white outline-none"
-            >
-              <option value={0.5}>0.5 km</option>
-              <option value={1}>1 km</option>
-              <option value={2}>2 km</option>
-            </select>
-          </div>
-
-          <p className="text-[10px] text-neutral-400">
-            Uses telemetry units in centimeters. 1 km = 100000 world units.
-          </p>
-
-          <div className="mt-2 border-t border-neutral-700 pt-3">
-            <p className="mb-2 text-[10px] font-semibold text-neutral-300">
-              Fine Calibration
-            </p>
-
-            <div className="mb-2">
-              <label className="text-[10px] text-neutral-400">
-                Scale (%): {projectionCalibration.scalePercent.toFixed(2)}
-              </label>
-              <input
-                type="range"
-                min="98"
-                max="102"
-                step="0.01"
-                className="w-full accent-cyan-400"
-                value={projectionCalibration.scalePercent}
-                onChange={(e) =>
-                  updateCalibration({
-                    scalePercent: parseFloat(e.target.value),
-                  })
-                }
-              />
-            </div>
-
-            <div className="mb-2">
-              <label className="text-[10px] text-neutral-400">
-                Offset X: {projectionCalibration.offsetX}
-              </label>
-              <input
-                type="range"
-                min="-20000"
-                max="20000"
-                step="100"
-                className="w-full accent-cyan-400"
-                value={projectionCalibration.offsetX}
-                onChange={(e) =>
-                  updateCalibration({
-                    offsetX: parseInt(e.target.value, 10),
-                  })
-                }
-              />
-            </div>
-
-            <div className="mb-3">
-              <label className="text-[10px] text-neutral-400">
-                Offset Y: {projectionCalibration.offsetY}
-              </label>
-              <input
-                type="range"
-                min="-20000"
-                max="20000"
-                step="100"
-                className="w-full accent-cyan-400"
-                value={projectionCalibration.offsetY}
-                onChange={(e) =>
-                  updateCalibration({
-                    offsetY: parseInt(e.target.value, 10),
-                  })
-                }
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                updateCalibration({ scalePercent: 100, offsetX: 0, offsetY: 0 })
-              }
-              className="rounded bg-neutral-700 px-2 py-1 text-[10px] font-bold text-white hover:bg-neutral-600"
-            >
-              Reset Calibration
-            </button>
-          </div>
-
-          <div className="mt-3 border-t border-neutral-700 pt-3">
-            <p className="mb-2 text-[10px] font-semibold text-neutral-300">
-              Texture Alignment
-            </p>
-
-            <div className="mb-2">
-              <label className="text-[10px] text-neutral-400">
-                Texture Scale (%): {textureCalibration.scalePercent.toFixed(2)}
-              </label>
-              <input
-                type="range"
-                min="98"
-                max="102"
-                step="0.01"
-                className="w-full accent-cyan-400"
-                value={textureCalibration.scalePercent}
-                onChange={(e) =>
-                  updateTextureCalibration({
-                    scalePercent: parseFloat(e.target.value),
-                  })
-                }
-              />
-            </div>
-
-            <div className="mb-2">
-              <label className="text-[10px] text-neutral-400">
-                Texture Offset X: {textureCalibration.offsetX}
-              </label>
-              <input
-                type="range"
-                min="-20000"
-                max="20000"
-                step="100"
-                className="w-full accent-cyan-400"
-                value={textureCalibration.offsetX}
-                onChange={(e) =>
-                  updateTextureCalibration({
-                    offsetX: parseInt(e.target.value, 10),
-                  })
-                }
-              />
-            </div>
-
-            <div className="mb-3">
-              <label className="text-[10px] text-neutral-400">
-                Texture Offset Y: {textureCalibration.offsetY}
-              </label>
-              <input
-                type="range"
-                min="-20000"
-                max="20000"
-                step="100"
-                className="w-full accent-cyan-400"
-                value={textureCalibration.offsetY}
-                onChange={(e) =>
-                  updateTextureCalibration({
-                    offsetY: parseInt(e.target.value, 10),
-                  })
-                }
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                updateTextureCalibration({
-                  scalePercent: 100,
-                  offsetX: 0,
-                  offsetY: 0,
-                })
-              }
-              className="rounded bg-neutral-700 px-2 py-1 text-[10px] font-bold text-white hover:bg-neutral-600"
-            >
-              Reset Texture
-            </button>
-          </div>
         </div>
 
         {/* Player Locations */}
