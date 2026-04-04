@@ -4,27 +4,29 @@ import React, { useState, useEffect, useRef } from "react";
 import getPlayerMapdata from "@/utils/getPlayerMapdata";
 
 const CANVAS_SIZE = 1080;
+const CM_PER_KM = 100000;
 
+// PUBG telemetry coordinates are in centimeters from top-left origin.
 const MAPS = {
   Erangel: {
     src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Erangel_Main_Low_Res.png",
     name: "Erangel",
-    size: 800000,
+    size: 816000,
   },
   Miramar: {
     src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Miramar_Main_Low_Res.png",
     name: "Miramar",
-    size: 800000,
+    size: 816000,
   },
   Vikendi: {
     src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Vikendi_Main_Low_Res.png",
     name: "Vikendi",
-    size: 600000,
+    size: 816000,
   },
   Sanhok: {
     src: "https://raw.githubusercontent.com/pubg/api-assets/master/Assets/Maps/Sanhok_Main_Low_Res.png",
     name: "Sanhok",
-    size: 400000,
+    size: 408000,
   },
 };
 
@@ -36,12 +38,48 @@ const defaultGameInfo = (mapSize) => ({
   PlaneStopLocY: String(Math.round(mapSize * 0.9)),
 });
 
+const CALIBRATION_DEFAULTS = {
+  Erangel: { scalePercent: 100, offsetX: 0, offsetY: 0 },
+  Miramar: { scalePercent: 100, offsetX: 0, offsetY: 0 },
+  Vikendi: { scalePercent: 100, offsetX: 0, offsetY: 0 },
+  Sanhok: { scalePercent: 100, offsetX: 0, offsetY: 0 },
+};
+
+const TEXTURE_CALIBRATION_DEFAULTS = {
+  Erangel: { scalePercent: 100, offsetX: 0, offsetY: 0 },
+  Miramar: { scalePercent: 100, offsetX: 0, offsetY: 0 },
+  Vikendi: { scalePercent: 100, offsetX: 0, offsetY: 0 },
+  Sanhok: { scalePercent: 100, offsetX: 0, offsetY: 0 },
+};
+
 // PDF attached for unerstanding
 
 export default function PubgMapSimulator() {
   const [simulatorState, setSimulatorState] = useState(null);
+  const [showGrid, setShowGrid] = useState(true);
+  const [gridStepKm, setGridStepKm] = useState(1);
+  const [calibrationByMap, setCalibrationByMap] =
+    useState(CALIBRATION_DEFAULTS);
+  const [textureCalibrationByMap, setTextureCalibrationByMap] = useState(
+    TEXTURE_CALIBRATION_DEFAULTS,
+  );
+  const [projectionCalibration, setProjectionCalibration] = useState({
+    scalePercent: 100,
+    offsetX: 0,
+    offsetY: 0,
+  });
+  const [textureCalibration, setTextureCalibration] = useState({
+    scalePercent: 100,
+    offsetX: 0,
+    offsetY: 0,
+  });
   const gameStateRef = useRef(null);
-  const renderStateRef = useRef({ players: {}, circles: [], blueZoneAnim: null, viewport: null });
+  const renderStateRef = useRef({
+    players: {},
+    circles: [],
+    blueZoneAnim: null,
+    viewport: null,
+  });
   const canvasRef = useRef(null);
   const imagesRef = useRef({});
   const requestRef = useRef();
@@ -52,7 +90,7 @@ export default function PubgMapSimulator() {
         setSimulatorState({
           mapType: "Erangel",
           TotalPlayerList: data,
-          gameGlobalInfo: defaultGameInfo(800000),
+          gameGlobalInfo: defaultGameInfo(MAPS.Erangel.size),
         });
         renderStateRef.current.players = {};
       }
@@ -64,6 +102,24 @@ export default function PubgMapSimulator() {
   }, [simulatorState]);
 
   useEffect(() => {
+    if (!simulatorState?.mapType) return;
+    const nextCalibration =
+      calibrationByMap[simulatorState.mapType] ??
+      CALIBRATION_DEFAULTS[simulatorState.mapType] ??
+      CALIBRATION_DEFAULTS.Erangel;
+    setProjectionCalibration(nextCalibration);
+  }, [simulatorState?.mapType, calibrationByMap]);
+
+  useEffect(() => {
+    if (!simulatorState?.mapType) return;
+    const nextTextureCalibration =
+      textureCalibrationByMap[simulatorState.mapType] ??
+      TEXTURE_CALIBRATION_DEFAULTS[simulatorState.mapType] ??
+      TEXTURE_CALIBRATION_DEFAULTS.Erangel;
+    setTextureCalibration(nextTextureCalibration);
+  }, [simulatorState?.mapType, textureCalibrationByMap]);
+
+  useEffect(() => {
     Object.keys(MAPS).forEach((key) => {
       const img = new Image();
       img.crossOrigin = "Anonymous";
@@ -71,6 +127,79 @@ export default function PubgMapSimulator() {
       imagesRef.current[key] = img;
     });
   }, []);
+
+  const drawGridOverlay = (
+    ctx,
+    mapSize,
+    scale,
+    vpZoom,
+    stepKm,
+    offsetX,
+    offsetY,
+  ) => {
+    const safeStepKm = Number.isFinite(stepKm) ? Math.max(stepKm, 0.25) : 1;
+    const step = safeStepKm * CM_PER_KM;
+    const labelFont = Math.max(11 / vpZoom, 8 / vpZoom);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    ctx.clip();
+
+    for (let unit = 0; unit <= mapSize; unit += step) {
+      const index = Math.round(unit / step);
+      const posX = (unit + offsetX) * scale;
+      const posY = (unit + offsetY) * scale;
+      const isMajor = index % 2 === 0;
+
+      ctx.beginPath();
+      ctx.moveTo(posX, 0);
+      ctx.lineTo(posX, CANVAS_SIZE);
+      ctx.moveTo(0, posY);
+      ctx.lineTo(CANVAS_SIZE, posY);
+      ctx.lineWidth = (isMajor ? 1.6 : 1) / vpZoom;
+      ctx.strokeStyle = isMajor
+        ? "rgba(20, 230, 255, 0.42)"
+        : "rgba(255, 255, 255, 0.2)";
+      ctx.stroke();
+
+      if (isMajor) {
+        const kmLabel = `${(unit / CM_PER_KM).toFixed(0)} km`;
+        ctx.font = `600 ${labelFont}px monospace`;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.62)";
+
+        const textW = ctx.measureText(kmLabel).width;
+        const pad = 3 / vpZoom;
+
+        ctx.fillRect(
+          posX + 6 / vpZoom,
+          6 / vpZoom,
+          textW + pad * 2,
+          labelFont + pad * 2,
+        );
+        ctx.fillRect(
+          6 / vpZoom,
+          posY + 6 / vpZoom,
+          textW + pad * 2,
+          labelFont + pad * 2,
+        );
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+        ctx.fillText(
+          kmLabel,
+          posX + (6 + pad) / vpZoom,
+          (6 + labelFont + pad) / vpZoom,
+        );
+        ctx.fillText(
+          kmLabel,
+          (6 + pad) / vpZoom,
+          posY + (6 + labelFont + pad) / vpZoom,
+        );
+      }
+    }
+
+    ctx.restore();
+  };
 
   // =========================================================================
   // CANVAS RENDERING ENGINE
@@ -87,8 +216,17 @@ export default function PubgMapSimulator() {
       return;
     }
 
-    const currentMapSize = MAPS[state.mapType]?.size || 800000;
-    const scale = CANVAS_SIZE / currentMapSize;
+    const currentMapSize = MAPS[state.mapType]?.size || MAPS.Erangel.size;
+    const calibratedMapSize =
+      currentMapSize * (projectionCalibration.scalePercent / 100);
+    const scale = CANVAS_SIZE / calibratedMapSize;
+    const worldOffsetX = projectionCalibration.offsetX;
+    const worldOffsetY = projectionCalibration.offsetY;
+    const textureScale = textureCalibration.scalePercent / 100;
+    const textureOffsetX = textureCalibration.offsetX * scale;
+    const textureOffsetY = textureCalibration.offsetY * scale;
+    const toPxX = (x) => (x + worldOffsetX) * scale;
+    const toPxY = (y) => (y + worldOffsetY) * scale;
     const gi = state.gameGlobalInfo;
     const targetCircles = gi?.CircleArray ?? [];
 
@@ -110,14 +248,20 @@ export default function PubgMapSimulator() {
     rp.circles.forEach((vc, i) => {
       if (i === 0 && rp.blueZoneAnim) {
         const anim = rp.blueZoneAnim;
-        const progress = Math.min((performance.now() - anim.startTime) / anim.duration, 1.0);
+        const progress = Math.min(
+          (performance.now() - anim.startTime) / anim.duration,
+          1.0,
+        );
         vc.x = anim.startX + (anim.targetX - anim.startX) * progress;
         vc.y = anim.startY + (anim.targetY - anim.startY) * progress;
-        vc.radius = anim.startRadius + (anim.targetRadius - anim.startRadius) * progress;
+        vc.radius =
+          anim.startRadius + (anim.targetRadius - anim.startRadius) * progress;
         if (progress >= 1.0) rp.blueZoneAnim = null;
       } else {
         const tc = targetCircles[i];
-        const tx = parseFloat(tc.X), ty = parseFloat(tc.Y), tr = parseFloat(tc.Size) / 2;
+        const tx = parseFloat(tc.X),
+          ty = parseFloat(tc.Y),
+          tr = parseFloat(tc.Size) / 2;
         vc.x += (tx - vc.x) * 0.1;
         vc.y += (ty - vc.y) * 0.1;
         vc.radius += (tr - vc.radius) * 0.1;
@@ -127,7 +271,8 @@ export default function PubgMapSimulator() {
     // =====================================================================
     // VIEWPORT: AUTO-ZOOM TO BLUE ZONE (circle[0])
     // =====================================================================
-    if (!rp.viewport) rp.viewport = { zoom: 1, cx: CANVAS_SIZE / 2, cy: CANVAS_SIZE / 2 };
+    if (!rp.viewport)
+      rp.viewport = { zoom: 1, cx: CANVAS_SIZE / 2, cy: CANVAS_SIZE / 2 };
     const vp = rp.viewport;
 
     if (rp.circles.length >= 2) {
@@ -136,8 +281,8 @@ export default function PubgMapSimulator() {
       const bzPr = bz.radius * scale;
       const targetZoom = Math.max(1, (CANVAS_SIZE * 0.85) / (bzPr * 2));
       vp.zoom += (targetZoom - vp.zoom) * 0.02;
-      vp.cx  += (bz.x * scale - vp.cx) * 0.02;
-      vp.cy  += (bz.y * scale - vp.cy) * 0.02;
+      vp.cx += (toPxX(bz.x) - vp.cx) * 0.02;
+      vp.cy += (toPxY(bz.y) - vp.cy) * 0.02;
     } else {
       // No circles or white-circle-only phase: full map view, no zoom
       vp.zoom += (1 - vp.zoom) * 0.02;
@@ -162,7 +307,25 @@ export default function PubgMapSimulator() {
     // Map image
     const currentMapImg = imagesRef.current[state.mapType];
     if (currentMapImg && currentMapImg.complete) {
-      ctx.drawImage(currentMapImg, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      ctx.drawImage(
+        currentMapImg,
+        textureOffsetX,
+        textureOffsetY,
+        CANVAS_SIZE * textureScale,
+        CANVAS_SIZE * textureScale,
+      );
+    }
+
+    if (showGrid) {
+      drawGridOverlay(
+        ctx,
+        currentMapSize,
+        scale,
+        vp.zoom,
+        gridStepKm,
+        worldOffsetX,
+        worldOffsetY,
+      );
     }
 
     // -----------------------------------------------------------------------
@@ -174,13 +337,15 @@ export default function PubgMapSimulator() {
       // Announcement phase: just the white safe-zone circle
       const sz = rp.circles[0];
       ctx.beginPath();
-      ctx.arc(sz.x * scale, sz.y * scale, sz.radius * scale, 0, 2 * Math.PI);
+      ctx.arc(toPxX(sz.x), toPxY(sz.y), sz.radius * scale, 0, 2 * Math.PI);
       ctx.lineWidth = 3 / vp.zoom;
       ctx.strokeStyle = "#ffffff";
       ctx.stroke();
     } else if (rp.circles.length >= 2) {
       const bz = rp.circles[0];
-      const bzPx = bz.x * scale, bzPy = bz.y * scale, bzPr = bz.radius * scale;
+      const bzPx = toPxX(bz.x),
+        bzPy = toPxY(bz.y),
+        bzPr = bz.radius * scale;
 
       // Blue fog outside the blue zone (evenodd punch-out, clamped to map bounds)
       ctx.beginPath();
@@ -199,7 +364,7 @@ export default function PubgMapSimulator() {
       // Next safe zone — white circle
       const sz = rp.circles[1];
       ctx.beginPath();
-      ctx.arc(sz.x * scale, sz.y * scale, sz.radius * scale, 0, 2 * Math.PI);
+      ctx.arc(toPxX(sz.x), toPxY(sz.y), sz.radius * scale, 0, 2 * Math.PI);
       ctx.lineWidth = 3 / vp.zoom;
       ctx.strokeStyle = "#ffffff";
       ctx.stroke();
@@ -208,16 +373,22 @@ export default function PubgMapSimulator() {
     // =====================================================================
     // FLIGHT PATH + MOVING PLANE
     // =====================================================================
-    const planeStartX = parseFloat(gi?.PlaneStartLocX ?? 0) * scale;
-    const planeStartY = parseFloat(gi?.PlaneStartLocY ?? 0) * scale;
-    const planeStopX  = parseFloat(gi?.PlaneStopLocX  ?? 0) * scale;
-    const planeStopY  = parseFloat(gi?.PlaneStopLocY  ?? 0) * scale;
-    const planeAngle  = Math.atan2(planeStopY - planeStartY, planeStopX - planeStartX);
+    const planeStartX = toPxX(parseFloat(gi?.PlaneStartLocX ?? 0));
+    const planeStartY = toPxY(parseFloat(gi?.PlaneStartLocY ?? 0));
+    const planeStopX = toPxX(parseFloat(gi?.PlaneStopLocX ?? 0));
+    const planeStopY = toPxY(parseFloat(gi?.PlaneStopLocY ?? 0));
+    const planeAngle = Math.atan2(
+      planeStopY - planeStartY,
+      planeStopX - planeStartX,
+    );
 
     // Plane flies once from start → end over 60s, then disappears
     const PLANE_DURATION = 60000;
     if (!rp.planeStartTime) rp.planeStartTime = timestamp;
-    const planeT = Math.min((timestamp - rp.planeStartTime) / PLANE_DURATION, 1.0);
+    const planeT = Math.min(
+      (timestamp - rp.planeStartTime) / PLANE_DURATION,
+      1.0,
+    );
     const planeActive = planeT < 1.0;
 
     if (planeActive) {
@@ -248,7 +419,8 @@ export default function PubgMapSimulator() {
       // Fuselage
       ctx.beginPath();
       ctx.ellipse(0, 0, s * 1.5, s * 0.2, 0, 0, Math.PI * 2);
-      ctx.fill(); ctx.stroke();
+      ctx.fill();
+      ctx.stroke();
 
       // Left wing
       ctx.beginPath();
@@ -257,7 +429,8 @@ export default function PubgMapSimulator() {
       ctx.lineTo(-s * 0.85, -s * 0.6);
       ctx.lineTo(-s * 0.25, 0);
       ctx.closePath();
-      ctx.fill(); ctx.stroke();
+      ctx.fill();
+      ctx.stroke();
 
       // Right wing (mirror)
       ctx.beginPath();
@@ -266,7 +439,8 @@ export default function PubgMapSimulator() {
       ctx.lineTo(-s * 0.85, s * 0.6);
       ctx.lineTo(-s * 0.25, 0);
       ctx.closePath();
-      ctx.fill(); ctx.stroke();
+      ctx.fill();
+      ctx.stroke();
 
       // Tail fin left
       ctx.beginPath();
@@ -275,7 +449,8 @@ export default function PubgMapSimulator() {
       ctx.lineTo(-s * 1.5, -s * 0.15);
       ctx.lineTo(-s * 1.2, 0);
       ctx.closePath();
-      ctx.fill(); ctx.stroke();
+      ctx.fill();
+      ctx.stroke();
 
       // Tail fin right (mirror)
       ctx.beginPath();
@@ -284,7 +459,8 @@ export default function PubgMapSimulator() {
       ctx.lineTo(-s * 1.5, s * 0.15);
       ctx.lineTo(-s * 1.2, 0);
       ctx.closePath();
-      ctx.fill(); ctx.stroke();
+      ctx.fill();
+      ctx.stroke();
 
       ctx.shadowBlur = 0;
       ctx.restore();
@@ -304,7 +480,8 @@ export default function PubgMapSimulator() {
       vpos.x += (player.location.x - vpos.x) * 0.1;
       vpos.y += (player.location.y - vpos.y) * 0.1;
 
-      const px = vpos.x * scale, py = vpos.y * scale;
+      const px = toPxX(vpos.x),
+        py = toPxY(vpos.y);
       const dotR = 6 / vp.zoom;
 
       ctx.beginPath();
@@ -345,7 +522,10 @@ export default function PubgMapSimulator() {
     setSimulatorState((prev) => {
       const newCircles = [...prev.gameGlobalInfo.CircleArray];
       newCircles[index] = { ...newCircles[index], [prop]: String(value) };
-      return { ...prev, gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles } };
+      return {
+        ...prev,
+        gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles },
+      };
     });
   };
 
@@ -357,9 +537,17 @@ export default function PubgMapSimulator() {
       const newCircle = {
         X: String(Math.round(mapSize * 0.5)),
         Y: String(Math.round(mapSize * 0.5)),
-        Size: String(Math.round(existing.length === 0 ? mapSize * 0.6 : mapSize * 0.35)),
+        Size: String(
+          Math.round(existing.length === 0 ? mapSize * 0.6 : mapSize * 0.35),
+        ),
       };
-      return { ...prev, gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: [...existing, newCircle] } };
+      return {
+        ...prev,
+        gameGlobalInfo: {
+          ...prev.gameGlobalInfo,
+          CircleArray: [...existing, newCircle],
+        },
+      };
     });
   };
 
@@ -367,7 +555,10 @@ export default function PubgMapSimulator() {
     renderStateRef.current.blueZoneAnim = null;
     setSimulatorState((prev) => {
       const newCircles = prev.gameGlobalInfo.CircleArray.slice(0, -1);
-      return { ...prev, gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles } };
+      return {
+        ...prev,
+        gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles },
+      };
     });
   };
 
@@ -392,7 +583,10 @@ export default function PubgMapSimulator() {
     setSimulatorState((prev) => {
       const newCircles = [...prev.gameGlobalInfo.CircleArray];
       newCircles[0] = { ...newCircles[1] };
-      return { ...prev, gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles } };
+      return {
+        ...prev,
+        gameGlobalInfo: { ...prev.gameGlobalInfo, CircleArray: newCircles },
+      };
     });
   };
 
@@ -445,10 +639,38 @@ export default function PubgMapSimulator() {
       };
     });
 
-    renderStateRef.current = { players: {}, circles: [], blueZoneAnim: null, viewport: null, planeStartTime: null };
+    renderStateRef.current = {
+      players: {},
+      circles: [],
+      blueZoneAnim: null,
+      viewport: null,
+      planeStartTime: null,
+    };
   };
 
-  const currentMapUnits = MAPS[simulatorState?.mapType]?.size || 800000;
+  const updateCalibration = (partial) => {
+    const mapType = simulatorState?.mapType ?? "Erangel";
+    setProjectionCalibration((prev) => {
+      const next = { ...prev, ...partial };
+      setCalibrationByMap((prevMap) => ({ ...prevMap, [mapType]: next }));
+      return next;
+    });
+  };
+
+  const updateTextureCalibration = (partial) => {
+    const mapType = simulatorState?.mapType ?? "Erangel";
+    setTextureCalibration((prev) => {
+      const next = { ...prev, ...partial };
+      setTextureCalibrationByMap((prevMap) => ({
+        ...prevMap,
+        [mapType]: next,
+      }));
+      return next;
+    });
+  };
+
+  const currentMapUnits =
+    MAPS[simulatorState?.mapType]?.size || MAPS.Erangel.size;
   const circles = simulatorState?.gameGlobalInfo?.CircleArray ?? [];
 
   return (
@@ -456,13 +678,19 @@ export default function PubgMapSimulator() {
       {/* LEFT SIDE: Control Panel */}
       <div className="flex w-87.5 shrink-0 flex-col gap-6 overflow-y-auto border-r border-neutral-700 bg-neutral-800 p-6">
         <div>
-          <h1 className="mb-1 text-xl font-bold text-blue-400">PCOB Simulator</h1>
-          <p className="text-xs text-neutral-400">Drag sliders to test Canvas</p>
+          <h1 className="mb-1 text-xl font-bold text-blue-400">
+            PCOB Simulator
+          </h1>
+          <p className="text-xs text-neutral-400">
+            Drag sliders to test Canvas
+          </p>
         </div>
 
         {/* Map selector */}
         <div className="rounded-lg bg-neutral-900 p-4">
-          <label className="mb-2 block text-sm font-semibold text-neutral-300">Active Map</label>
+          <label className="mb-2 block text-sm font-semibold text-neutral-300">
+            Active Map
+          </label>
           <select
             className="w-full rounded border border-neutral-600 bg-neutral-700 p-2 text-sm text-white outline-none"
             value={simulatorState?.mapType ?? "Erangel"}
@@ -470,7 +698,7 @@ export default function PubgMapSimulator() {
           >
             <option value="Erangel">Erangel (8x8km)</option>
             <option value="Miramar">Miramar (8x8km)</option>
-            <option value="Vikendi">Vikendi (6x6km)</option>
+            <option value="Vikendi">Vikendi (8x8km)</option>
             <option value="Sanhok">Sanhok (4x4km)</option>
           </select>
         </div>
@@ -478,7 +706,9 @@ export default function PubgMapSimulator() {
         {/* Zone Circles */}
         <div className="flex flex-col gap-4 rounded-lg bg-neutral-900 p-4">
           <div className="flex items-center justify-between border-b border-neutral-700 pb-2">
-            <h3 className="text-sm font-semibold text-neutral-300">Zone Circles</h3>
+            <h3 className="text-sm font-semibold text-neutral-300">
+              Zone Circles
+            </h3>
             <div className="flex gap-2">
               {circles.length < 2 && (
                 <button
@@ -500,13 +730,17 @@ export default function PubgMapSimulator() {
           </div>
 
           {circles.length === 0 && (
-            <p className="text-center text-xs text-neutral-500">No circles yet — click &quot;+ Circle 1&quot;</p>
+            <p className="text-center text-xs text-neutral-500">
+              No circles yet — click &quot;+ Circle 1&quot;
+            </p>
           )}
 
           {circles.map((circle, i) => (
             <div key={i} className="rounded bg-neutral-800 p-3">
               <div className="mb-2 flex items-center justify-between">
-                <span className={`text-xs font-bold ${i === 0 ? "text-blue-400" : "text-white"}`}>
+                <span
+                  className={`text-xs font-bold ${i === 0 ? "text-blue-400" : "text-white"}`}
+                >
                   {i === 0 ? "Blue Zone (current)" : "Safe Zone (next)"}
                 </span>
                 {i === 0 && circles.length >= 2 && (
@@ -518,13 +752,21 @@ export default function PubgMapSimulator() {
                   </button>
                 )}
               </div>
-              {[["X", "X"], ["Y", "Y"], ["Size", "Diameter"]].map(([prop, label]) => (
+              {[
+                ["X", "X"],
+                ["Y", "Y"],
+                ["Size", "Diameter"],
+              ].map(([prop, label]) => (
                 <div key={prop} className="mt-1">
-                  <label className="text-[10px] text-neutral-400">{label}</label>
+                  <label className="text-[10px] text-neutral-400">
+                    {label}
+                  </label>
                   <input
                     type="range"
                     min="0"
-                    max={prop === "Size" ? currentMapUnits * 1.5 : currentMapUnits}
+                    max={
+                      prop === "Size" ? currentMapUnits * 1.5 : currentMapUnits
+                    }
                     step="1000"
                     className={`w-full ${i === 0 ? "accent-blue-500" : "accent-white"}`}
                     value={parseFloat(circle[prop]) ?? 0}
@@ -562,6 +804,192 @@ export default function PubgMapSimulator() {
           ))}
         </div>
 
+        {/* Debug Overlay */}
+        <div className="flex flex-col gap-3 rounded-lg bg-neutral-900 p-4">
+          <h3 className="border-b border-neutral-700 pb-2 text-sm font-semibold text-neutral-300">
+            Grid Debug
+          </h3>
+
+          <label className="flex items-center gap-2 text-xs text-neutral-300">
+            <input
+              type="checkbox"
+              checked={showGrid}
+              onChange={(e) => setShowGrid(e.target.checked)}
+              className="h-4 w-4 accent-cyan-400"
+            />
+            Show calibration grid
+          </label>
+
+          <div>
+            <label className="mb-1 block text-[10px] text-neutral-400">
+              Grid Step
+            </label>
+            <select
+              value={gridStepKm}
+              onChange={(e) => setGridStepKm(parseFloat(e.target.value))}
+              className="w-full rounded border border-neutral-600 bg-neutral-700 p-2 text-sm text-white outline-none"
+            >
+              <option value={0.5}>0.5 km</option>
+              <option value={1}>1 km</option>
+              <option value={2}>2 km</option>
+            </select>
+          </div>
+
+          <p className="text-[10px] text-neutral-400">
+            Uses telemetry units in centimeters. 1 km = 100000 world units.
+          </p>
+
+          <div className="mt-2 border-t border-neutral-700 pt-3">
+            <p className="mb-2 text-[10px] font-semibold text-neutral-300">
+              Fine Calibration
+            </p>
+
+            <div className="mb-2">
+              <label className="text-[10px] text-neutral-400">
+                Scale (%): {projectionCalibration.scalePercent.toFixed(2)}
+              </label>
+              <input
+                type="range"
+                min="98"
+                max="102"
+                step="0.01"
+                className="w-full accent-cyan-400"
+                value={projectionCalibration.scalePercent}
+                onChange={(e) =>
+                  updateCalibration({
+                    scalePercent: parseFloat(e.target.value),
+                  })
+                }
+              />
+            </div>
+
+            <div className="mb-2">
+              <label className="text-[10px] text-neutral-400">
+                Offset X: {projectionCalibration.offsetX}
+              </label>
+              <input
+                type="range"
+                min="-20000"
+                max="20000"
+                step="100"
+                className="w-full accent-cyan-400"
+                value={projectionCalibration.offsetX}
+                onChange={(e) =>
+                  updateCalibration({
+                    offsetX: parseInt(e.target.value, 10),
+                  })
+                }
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="text-[10px] text-neutral-400">
+                Offset Y: {projectionCalibration.offsetY}
+              </label>
+              <input
+                type="range"
+                min="-20000"
+                max="20000"
+                step="100"
+                className="w-full accent-cyan-400"
+                value={projectionCalibration.offsetY}
+                onChange={(e) =>
+                  updateCalibration({
+                    offsetY: parseInt(e.target.value, 10),
+                  })
+                }
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                updateCalibration({ scalePercent: 100, offsetX: 0, offsetY: 0 })
+              }
+              className="rounded bg-neutral-700 px-2 py-1 text-[10px] font-bold text-white hover:bg-neutral-600"
+            >
+              Reset Calibration
+            </button>
+          </div>
+
+          <div className="mt-3 border-t border-neutral-700 pt-3">
+            <p className="mb-2 text-[10px] font-semibold text-neutral-300">
+              Texture Alignment
+            </p>
+
+            <div className="mb-2">
+              <label className="text-[10px] text-neutral-400">
+                Texture Scale (%): {textureCalibration.scalePercent.toFixed(2)}
+              </label>
+              <input
+                type="range"
+                min="98"
+                max="102"
+                step="0.01"
+                className="w-full accent-cyan-400"
+                value={textureCalibration.scalePercent}
+                onChange={(e) =>
+                  updateTextureCalibration({
+                    scalePercent: parseFloat(e.target.value),
+                  })
+                }
+              />
+            </div>
+
+            <div className="mb-2">
+              <label className="text-[10px] text-neutral-400">
+                Texture Offset X: {textureCalibration.offsetX}
+              </label>
+              <input
+                type="range"
+                min="-20000"
+                max="20000"
+                step="100"
+                className="w-full accent-cyan-400"
+                value={textureCalibration.offsetX}
+                onChange={(e) =>
+                  updateTextureCalibration({
+                    offsetX: parseInt(e.target.value, 10),
+                  })
+                }
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="text-[10px] text-neutral-400">
+                Texture Offset Y: {textureCalibration.offsetY}
+              </label>
+              <input
+                type="range"
+                min="-20000"
+                max="20000"
+                step="100"
+                className="w-full accent-cyan-400"
+                value={textureCalibration.offsetY}
+                onChange={(e) =>
+                  updateTextureCalibration({
+                    offsetY: parseInt(e.target.value, 10),
+                  })
+                }
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                updateTextureCalibration({
+                  scalePercent: 100,
+                  offsetX: 0,
+                  offsetY: 0,
+                })
+              }
+              className="rounded bg-neutral-700 px-2 py-1 text-[10px] font-bold text-white hover:bg-neutral-600"
+            >
+              Reset Texture
+            </button>
+          </div>
+        </div>
+
         {/* Player Locations */}
         <div className="flex flex-col gap-4 rounded-lg bg-neutral-900 p-4">
           <h3 className="border-b border-neutral-700 pb-2 text-sm font-semibold text-neutral-300">
@@ -578,7 +1006,9 @@ export default function PubgMapSimulator() {
               <div className="mt-2 flex gap-4">
                 {["x", "y"].map((axis) => (
                   <div key={axis} className="flex-1">
-                    <label className="text-[10px] text-neutral-400">{axis.toUpperCase()}</label>
+                    <label className="text-[10px] text-neutral-400">
+                      {axis.toUpperCase()}
+                    </label>
                     <input
                       type="range"
                       min="0"
@@ -586,7 +1016,9 @@ export default function PubgMapSimulator() {
                       step="1000"
                       className="w-full accent-neutral-500"
                       value={player.location[axis] ?? 0}
-                      onChange={(e) => updatePlayerPos(index, axis, e.target.value)}
+                      onChange={(e) =>
+                        updatePlayerPos(index, axis, e.target.value)
+                      }
                     />
                   </div>
                 ))}
